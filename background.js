@@ -3,77 +3,84 @@ if (RUNTIME_ENV === ENV_TYPES.STATIC) {
   throw new Error("Invalid environment");
 }
 
-const API = RUNTIME_ENV === ENV_TYPES.FIREFOX ? browser : chrome;
+const API = (RUNTIME_ENV === ENV_TYPES.FIREFOX ? browser : chrome);
 
 const IS_FIREFOX = RUNTIME_ENV === ENV_TYPES.FIREFOX;
 
 console.log("The current environment is", RUNTIME_ENV);
 
 API.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === 'exchangeAuthCode') {
+  if (message.type === "exchangeAuthCode") {
     (async () => {
       try {
-        const response = await fetch('https://oauth2.googleapis.com/token', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        const { pkce_verifier } = await API.storage.local.get("pkce_verifier");
+
+        if (!pkce_verifier) {
+          throw new Error("PKCE verifier missing");
+        }
+
+        const response = await fetch("https://oauth2.googleapis.com/token", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
           body: new URLSearchParams({
             code: message.code,
             client_id: IS_FIREFOX ? FIREFOX_CLIENT_ID : CHROME_CLIENT_ID,
-            code_verifier: storedVerifier,
+            client_secret: IS_FIREFOX ? FIREFOX_CLIENT_SECRET : CHROME_CLIENT_SECRET,
+            // code_verifier: pkce_verifier,Doesnt work
             redirect_uri: API.identity.getRedirectURL(),
-            grant_type: 'authorization_code'
+            grant_type: "authorization_code"
           })
         });
 
         if (!response.ok) {
-          const errorData = await response.text(); // Get the response as text
-          console.error(`Error data: ${errorData}`); // Log to see details
-          throw new Error(`Token exchange failed: ${response.status}`);
+          const text = await response.text();
+          throw new Error(text);
         }
 
         const data = await response.json();
+
         sendResponse({
           token: data.access_token,
           refreshToken: data.refresh_token,
           expiresIn: data.expires_in
         });
-      } catch (error) {
-        console.error(error);
-        sendResponse({ error: error.message });  // Send back the error
+      } catch (err) {
+        console.error(err);
+        sendResponse({ error: err.message });
       }
     })();
 
-    return true; // This keeps the message channel open for sendResponse
+    return true; // 🔑 keep channel open
   }
 
-  if (message.type === 'refreshToken') {
+  if (message.type === "refreshToken") {
     (async () => {
       try {
-        const response = await fetch('https://oauth2.googleapis.com/token', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        const response = await fetch("https://oauth2.googleapis.com/token", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
           body: new URLSearchParams({
             client_id: IS_FIREFOX ? FIREFOX_CLIENT_ID : CHROME_CLIENT_ID,
+            client_secret: IS_FIREFOX ? FIREFOX_CLIENT_SECRET : CHROME_CLIENT_SECRET,
             refresh_token: message.refreshToken,
-            grant_type: 'refresh_token'
+            grant_type: "refresh_token"
           })
         });
 
-        if (!response.ok) {
-          throw new Error(`Refresh failed: ${response.status}`);
-        }
+        if (!response.ok) throw new Error("Refresh failed");
 
         const data = await response.json();
+
         sendResponse({
           token: data.access_token,
           expiresIn: data.expires_in
         });
-      } catch (error) {
-        console.error(error);
-        sendResponse({ error: error.message });  // Send back the error
+
+      } catch (err) {
+        sendResponse({ error: err.message });
       }
     })();
 
-    return true; // This keeps the message channel open for sendResponse
+    return true;
   }
 });

@@ -13,7 +13,7 @@
         "https://www.googleapis.com/*",
         "https://api.open-meteo.com/v1/forecast*",
         "https://oauth2.googleapis.com/*",
-        "https://www.XXXXXXX.wa.gov.au/api/*"
+        "<all_urls>"
     ],
     "browser_specific_settings": {
         "gecko": {
@@ -23,10 +23,11 @@
     },
     "background": {
         "scripts": [
-            "getEnv.js",
+            "utils/getEnv.js",
+            "privateVars.js",
             "background.js"
         ],
-        "persistent": false
+        "persistent": true
     },
     "browser_action": {
         "default_title": "Groxic"

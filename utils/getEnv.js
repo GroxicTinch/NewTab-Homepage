@@ -1,10 +1,10 @@
-const ENV_TYPES = {
+ENV_TYPES = {
     FIREFOX: "firefox-extension",
     CHROME: "chrome-extension",
     STATIC: "static-web"
 };
 
-const RUNTIME_ENV = getRuntimeEnvironment();
+RUNTIME_ENV = getRuntimeEnvironment();
 
 function getRuntimeEnvironment() {
     // Firefox extension

@@ -1,4 +1,4 @@
-const VERSION = "0.3.0";
+const VERSION = "0.3.2";
 
 const CACHE = {
   EMAIL: "email",
@@ -24,109 +24,24 @@ const SCOPES = [
 ].join(' ');
 
 const DEMO_MODE = (RUNTIME_ENV === ENV_TYPES.STATIC);
+const CLIENT_ID = (RUNTIME_ENV === ENV_TYPES.FIREFOX ? FIREFOX_CLIENT_ID : CHROME_CLIENT_ID)
+let isPrivateWindow = false;
 
-// Fake data generators for static page mode
-function generateFakeEmails() {
-  const senders = [
-    { name: 'John Smith', email: 'john.smith@example.com' },
-    { name: 'Sarah Johnson', email: 'sarah.j@example.com' },
-    { name: 'Team Lead', email: 'team.lead@company.com' },
-    { name: 'HR Department', email: 'hr@company.com' },
-    { name: 'Marketing', email: 'marketing@company.com' }
-  ];
-  const subjects = [
-    'Project Update - Please Review',
-    'Meeting Notes from Yesterday',
-    'Important: Action Required',
-    'FW: Budget Review Q1',
-    'New Policy Announcement'
-  ];
+let pkce_verifier = generateCodeVerifier();
 
-  const now = new Date();
-  const messages = [];
-  for (let i = 0; i < 5; i++) {
-    const sender = senders[i % senders.length];
-    const subject = subjects[i % subjects.length];
-    const date = new Date(now.getTime() - (i * 3600000)); // Each email is 1 hour older
-    
-    messages.push({
-      id: `fake_${i}`,
-      from: sender.name,
-      email: sender.email,
-      subject: subject,
-      date: date
-    });
-  }
-  return messages;
+if (DEMO_MODE) {
+  browser.storage.local.set({ "pkce_verifier": pkce_verifier });
 }
 
-function generateFakeTasks() {
-  const now = new Date();
-  const tomorrow = new Date(now.getTime() + 86400000);
-  const nextWeek = new Date(now.getTime() + 604800000);
-  
-  return {
-    items: [
-      {
-        id: 'task1',
-        title: 'Review project proposal',
-        status: 'needsAction',
-        due: tomorrow.toISOString().split('T')[0],
-        position: '00000000000000000000',
-        children: []
-      },
-      {
-        id: 'task2',
-        title: 'Complete quarterly report',
-        status: 'needsAction',
-        due: nextWeek.toISOString().split('T')[0],
-        position: '00000000000000000001',
-        children: [
-          {
-            id: 'task2a',
-            title: 'Gather Q1 metrics',
-            status: 'needsAction',
-            position: '00000000000000000000',
-            children: []
-          },
-          {
-            id: 'task2b',
-            title: 'Write summary',
-            status: 'completed',
-            position: '00000000000000000001',
-            children: []
-          }
-        ]
-      },
-      {
-        id: 'task3',
-        title: 'Schedule team meeting',
-        status: 'completed',
-        position: '00000000000000000002',
-        children: []
-      },
-      {
-        id: 'task4',
-        title: 'Update documentation',
-        status: 'needsAction',
-        position: '00000000000000000003',
-        children: []
-      }
-    ]
-  };
+// PKCE doesn't even work currently due to Google Cloud Credentials still requiring a client_secret even when we try use PKCE
+function generateCodeVerifier() {
+  const array = new Uint32Array(28);
+  window.crypto.getRandomValues(array);
+  return array.join('');
 }
 
-function generateFakeBinData() {
-  const now = new Date();
-  const general = new Date(now.getTime() + 259200000); // 3 days from now
-  const recycling = new Date(now.getTime() + 604800000); // 7 days from now
-  const fogo = new Date(now.getTime() + 1209600000); // 14 days from now
-  
-  return {
-    FOGO: fogo.toISOString(),
-    General: general.toISOString(),
-    Recycling: recycling.toISOString()
-  };
+async function generateCodeChallenge(verifier) {
+  return btoa(String.fromCharCode(...new Uint8Array(crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier)))));
 }
 
 // Compatibility shim: provide a promise-based `browser` API when running in Chrome
@@ -198,6 +113,8 @@ if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
   })(chrome);
 }
 
+let userConfirmation = null;
+
 function wmoInterpretation(color, description, icon) {
   color = color || '#9E9200';
   icon = `icons/airy/${icon}@4x.png`;
@@ -255,11 +172,18 @@ const WMO_CODES = {
 
 // https://open-meteo.com/en/docs?current=weather_code&daily=weather_code#weather_variable_documentation
 const WEATHER_API = 'https://api.open-meteo.com/v1/forecast' +
-                    '?latitude=-31.9522&longitude=115.8614' +
-                    '&daily=weather_code,temperature_2m_max,temperature_2m_min,uv_index_max,precipitation_probability_max' +
+                    '?daily=weather_code,temperature_2m_max,temperature_2m_min,uv_index_max,precipitation_probability_max' +
                     '&current=weather_code,temperature_2m&timezone=auto&timeformat=unixtime';
 
 document.addEventListener("DOMContentLoaded", () => {
+  const loadscreen = document.getElementById("loadscreen");
+
+  const leftColumn = document.getElementById("left-column");
+  const rightColumn = document.getElementById("right-column");
+
+  const collapseHandleLeft = document.getElementById("collapse-handle-left");
+  const collapseHandleRight = document.getElementById("collapse-handle-right");
+
   const settingsButton = document.getElementById("settings-button");
 
   const loginButton = document.getElementById("login-button");
@@ -284,6 +208,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const headerDate = document.getElementById("date");
 
   // Get color pickers
+  const headerBgColorPicker = document.getElementById("header-bg-color");
+  const headerTextColorPicker = document.getElementById("header-text-color");
   const leftBgColorPicker = document.getElementById("left-bg-color");
   const leftTextColorPicker = document.getElementById("left-text-color");
   const centerBgColorPicker = document.getElementById("center-bg-color");
@@ -306,14 +232,21 @@ document.addEventListener("DOMContentLoaded", () => {
   const groupDividerColorControl = document.getElementById('group-divider-color');
 
   // Get google response cache setting
-  const cacheDurationInput = document.getElementById("cache-duration"); // New input for cache duration
+  const useThemeOverridesCheckbox = document.getElementById("use-theme-overrides");
   const useTwoEmailsCheckbox = document.getElementById("use-two-emails");
+  const cacheDurationInput = document.getElementById("cache-duration"); // New input for cache duration
+
+  const btnUseGPS = document.getElementById("btn-use-gps");
+  const gpsLatInput = document.getElementById("gps-lat");
+  const gpsLngInput = document.getElementById("gps-lng");
 
   const shortcutsContainer = document.getElementById("shortcuts");
 
   const versionDisplay = document.getElementById("version-text");
 
   // Event listeners for color pickers
+  headerBgColorPicker.addEventListener("input", updateColors);
+  headerTextColorPicker.addEventListener("input", updateColors);
   leftBgColorPicker.addEventListener("input", updateColors);
   leftTextColorPicker.addEventListener("input", updateColors);
   centerBgColorPicker.addEventListener("input", updateColors);
@@ -321,6 +254,40 @@ document.addEventListener("DOMContentLoaded", () => {
   rightBgColorPicker.addEventListener("input", updateColors);
   rightTextColorPicker.addEventListener("input", updateColors);
 
+  collapseHandleLeft.addEventListener("click", () => {
+    leftCollapsed = !leftCollapsed;
+
+    localStorage.setItem("leftColumnCollapsed", leftCollapsed);
+    updateCollapseStates();
+  });
+  collapseHandleRight.addEventListener("click", () => {
+    rightCollapsed = !rightCollapsed;
+
+    localStorage.setItem("rightColumnCollapsed", rightCollapsed);
+    updateCollapseStates();
+  });
+
+  useThemeOverridesCheckbox.addEventListener("change", () => {
+    useThemeOverrides = useThemeOverridesCheckbox.checked;
+    updateColors();
+  });
+
+  btnUseGPS.addEventListener("click", () => {
+    // [FIXME] Freezes up when clicked a few times
+    btnUseGPS.disabled = true;
+    btnUseGPS.innerText = "Getting GPS...";
+    btnUseGPS.classList.add("disabled");
+    getGPS().then(coords => {
+      gps = [coords.latitude, coords.longitude];
+      gpsLatInput.value = coords.latitude;
+      gpsLngInput.value = coords.longitude;
+      btnUseGPS.innerText = "Use GPS";
+      btnUseGPS.disabled = false;
+    }).catch(error => {
+      console.error("Error obtaining GPS coordinates: ", error);
+    });
+  });
+  
   settingsButton.addEventListener("click", () => {
     settingsModal.classList.toggle("hidden");
   });
@@ -344,10 +311,10 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       if(choice === 0) {
-        await browser.storage.sync.remove(["settings", "themeColors", "shortcutsData"]);
+        await storageRemove(["settings", "themeColors", "shortcutsData"]);
         location.reload(); // Reload to apply default settings
       } else if (choice === 1) {
-        await browser.storage.sync.remove(["settings", "themeColors"]);
+        await storageRemove(["settings", "themeColors"]);
         location.reload(); // Reload to apply default settings
       }
     });
@@ -378,7 +345,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const backup = backupList.find(b => b.index === selectedBackupIndex);;
       const confirm = await getUserConfirmation(
         `Are you sure you want to override <strong>${backup.name}</strong>?`,
-        ["Yes", "No"]
+        [{ "Yes": "#b91c1c" }, "No"]
       );
   
       if (confirm === 0) {
@@ -422,7 +389,7 @@ document.addEventListener("DOMContentLoaded", () => {
   
     const confirm = await getUserConfirmation(
       `Delete <strong>${selected.name}</strong>?`,
-      ["Yes", { Cancel: "#b91c1c" }]
+      [{ "Yes": "#b91c1c" }, "Cancel"]
     );
   
     if (confirm === 0) {
@@ -461,7 +428,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   closeSettings.addEventListener("click", () => {
     settingsModal.classList.add("hidden");
-    saveSettingsToSync(); // Save colors on change
+    saveSettingsToStorage(); // Save colors on change
   });
 
   document.querySelectorAll('#shortcuts-settings input').forEach(input => {
@@ -472,6 +439,9 @@ document.addEventListener("DOMContentLoaded", () => {
     input.addEventListener('input', applyShortcutStyles);
   });
 
+  let leftCollapsed = false;
+  let rightCollapsed = false;
+
   let backupList = [];
   let selectedBackupIndex = null;
   let shortcutsData = [];
@@ -479,9 +449,10 @@ document.addEventListener("DOMContentLoaded", () => {
   let shortcutsEditMode = false;
   let editingGroupIndex = null;
   let editingShortcutIndex = null;
+  let useThemeOverrides = false;
   let useTwoEmails = false;
 
-  let isPrivateWindow = false;
+  let gps = null;
 
   async function checkPrivateWindow() {
     const window = await browser.windows.getCurrent();
@@ -664,7 +635,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function saveShortcuts() {
     if(shortcutsData) {
       console.log("Storage Saved");
-      browser.storage.sync.set({ shortcutsData }).catch(error => {
+      storageSet("shortcutsData", shortcutsData).catch(error => {
         console.error("Error saving shortcuts:", error);
       });
     } else {
@@ -797,8 +768,13 @@ document.addEventListener("DOMContentLoaded", () => {
         delBtn.innerHTML = ICONS.DELETE;
         delBtn.className = "text-red-400 hover:text-red-600";
         delBtn.title = "Delete group";
-        delBtn.onclick = () => {
-          if (confirm(`Delete group "${group.name}"?`)) {
+        delBtn.onclick = async() => {
+          const confirm = await getUserConfirmation(
+            `Delete group <strong>"${group.name}"</strong>?`,
+            [{ "Yes": "#b91c1c" }, "No"]
+          );
+
+          if (confirm === 0) {
             shortcutsData.splice(groupIndex, 1);
             localStorage.removeItem(collapseKey);
             renderShortcuts();
@@ -912,9 +888,14 @@ document.addEventListener("DOMContentLoaded", () => {
           delBtn.innerHTML = ICONS.DELETE;
           delBtn.className = "text-red-400 hover:text-red-600";
           delBtn.title = "Delete shortcut";
-          delBtn.onclick = (e) => {
+          delBtn.onclick =  async (e) => {
             e.stopPropagation();
-            if (confirm(`Delete shortcut "${shortcut.title}"?`)) {
+            const confirm = await getUserConfirmation(
+              `Delete shortcut "${shortcut.title}"?`,
+              [{ "Yes": "#b91c1c" }, "No"]
+            );
+
+            if (confirm === 0) {
               shortcutsData[groupIndex].shortcuts.splice(shortcutIndex, 1);
               renderShortcuts();
             }
@@ -997,6 +978,35 @@ document.addEventListener("DOMContentLoaded", () => {
 
     applyShortcutStyles();
   }
+
+  function generateDefaultShortcutsData() {
+    return [
+      {
+        name: "Social Media",
+        shortcuts: [
+          { title: "Gmail", icon: "fa-envelope fas", color: "#EA4335", link: "gmail.com" },
+          { title: "Twitter", icon: "fa-twitter fab", color: "#1DA1F2", link: "twitter.com" },
+          { title: "Reddit", icon: "fa-reddit fab", color: "#FF4500", link: "reddit.com" }
+        ]
+      },
+      {
+        name: "Dev Tools",
+        shortcuts: [
+          { title: "GitHub", icon: "fa-github fab", color: "#333", link: "github.com" },
+          { title: "Stack Overflow", icon: "fa-stack-overflow fab", color: "#F48024", link: "stackoverflow.com" },
+          { title: "MDN", icon: "fa-book fas", color: "#0C7792", link: "developer.mozilla.org" }
+        ]
+      },
+      {
+        name: "Productivity",
+        shortcuts: [
+          { title: "Google Drive", icon: "fa-google fab", color: "#4285F4", link: "drive.google.com" },
+          { title: "Trello", icon: "fa-rectangle-list fas", color: "#0079BF", link: "trello.com" },
+          { title: "Notion", icon: "fa-database fas", color: "#000", link: "notion.so" }
+        ]
+      }
+    ];
+  }
   
   function moveGroup(index, direction) {
     const newIndex = index + direction;
@@ -1006,15 +1016,17 @@ document.addEventListener("DOMContentLoaded", () => {
     renderShortcuts();
   }
   
-  async function loadSettingsFromSync() {
-    if(!await browser.storage.sync.getBytesInUse()) {
+  async function loadSettingsFromStorage() {
+    if(await storageEmpty()) {
       console.warn("storage is empty");
       loadSettingsFromVars();
     } else {
       try {
-        const colors = await browser.storage.sync.get("themeColors");
-        const loadSettings = await browser.storage.sync.get("settings");
-        const data = await browser.storage.sync.get("shortcutsData");
+        const colors = await storageGet("themeColors");
+        const loadSettings = await storageGet("settings");
+        const data = await storageGet("shortcutsData");
+
+        console.log("Loaded settings from storage:", { colors, loadSettings, data });
         
         loadSettingsFromVars(colors.themeColors, loadSettings.settings, data.shortcutsData);
   
@@ -1032,44 +1044,58 @@ document.addEventListener("DOMContentLoaded", () => {
       const parsed = JSON.parse(content);
 
       loadSettingsFromVars(parsed.themeColors, parsed.settings, parsed.shortcutsData);
-      saveSettingsToSync();
+      saveSettingsToStorage();
     } catch (error) {
       console.error("Error loading settings:", error);
-      alert("Failed to load settings. Make sure it's a valid GroxicHomepage.json file.");
+      getUserConfirmation("Failed to load settings. Make sure it's a valid GroxicHomepage.json file.");
     }
   }
 
   // Load stored colors if available
   async function loadSettingsFromVars(themeColors, settings, inShortcutData) {
+    headerBgColorPicker.value = themeColors?.headerBg || "#1F2937";
+    headerTextColorPicker.value = themeColors?.headerText || "#FFFFFF";
     leftBgColorPicker.value = themeColors?.leftBg || "#1F2937";
     leftTextColorPicker.value = themeColors?.leftText || "#FFFFFF";
     centerBgColorPicker.value = themeColors?.centerBg || "#1F2937";
-    
     centerTextColorPicker.value = themeColors?.centerText || "#FFFFFF";
     rightBgColorPicker.value = themeColors?.rightBg || "#1F2937";
     rightTextColorPicker.value = themeColors?.rightText || "#FFFFFF";
 
-    shortcutIconSizeControl.value = settings?.shortcutIconSize ?? 32,
-    shortcutTextSizeControl.value = settings?.shortcutTextSize ?? 14,
-    shortcutPadXControl.value = settings?.shortcutPadX ?? 12,
-    shortcutPadYControl.value = settings?.shortcutPadY ?? 12,
-    shortcutMarginXControl.value = settings?.shortcutMarginX ?? 12,
-    shortcutMarginYControl.value = settings?.shortcutMarginY ?? 12,
-    shortcutTextColorControl.value = settings?.shortcutTextColor || '#ffffff',
-    shortcutIconRadiusControl.value = settings?.shortcutIconRadius ?? 12,
+    shortcutIconSizeControl.value = settings?.shortcutIconSize ?? 32;
+    shortcutTextSizeControl.value = settings?.shortcutTextSize ?? 14;
+    shortcutPadXControl.value = settings?.shortcutPadX ?? 40;
+    shortcutPadYControl.value = settings?.shortcutPadY ?? 12;
+    shortcutMarginXControl.value = settings?.shortcutMarginX ?? 12;
+    shortcutMarginYControl.value = settings?.shortcutMarginY ?? 12;
+    shortcutTextColorControl.value = settings?.shortcutTextColor || '#ffffff';
+    shortcutIconRadiusControl.value = settings?.shortcutIconRadius ?? 12;
 
-    groupTextSizeControl.value = settings?.groupTextSize ?? 16,
-    groupDividerColorControl.value = settings?.groupDividerColor || '#666666',
+    groupTextSizeControl.value = settings?.groupTextSize ?? 16;
+    groupDividerColorControl.value = settings?.groupDividerColor || '#666666';
 
     cacheDurationInput.value = settings?.cacheDuration ?? 10; // Default to 5 minutes
+
+    if (settings?.useThemeOverrides === undefined) {
+      useThemeOverrides = true;
+    } else {
+      useThemeOverrides = !!settings.useThemeOverrides;
+    }
+    useThemeOverridesCheckbox.checked = useThemeOverrides;
 
     useTwoEmails = !!settings?.useTwoEmails;
     useTwoEmailsCheckbox.checked = useTwoEmails;
 
+    gps = [settings?.gps?.lat ?? -31.9522, settings?.gps?.lng ?? 115.8614];
+
+    gpsLatInput.value = gps[0];
+    gpsLngInput.value = gps[1];
+  
     if(inShortcutData) {
       shortcutsData = inShortcutData;
     } else {
-      shortcutsData = [{ name: "Default", shortcuts: [] }];
+      // If shortcuts cannot be loaded, populate with fake entries
+      shortcutsData = generateDefaultShortcutsData();
     }
 
     shortcutsEditMode = false;
@@ -1082,7 +1108,7 @@ document.addEventListener("DOMContentLoaded", () => {
     updateColors(); // Apply loaded colors
   }
 
-  function saveSettingsToSync() {
+  async function saveSettingsToStorage() {
     const tempSaveData = getSaveSettingsData();
     let shouldSave = true;
     if(tempSaveData.themeColors == null || tempSaveData.themeColors == undefined || tempSaveData.themeColors == {}) {
@@ -1099,7 +1125,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (!shouldSave) {
-      if (confirm('One or more settings are invalid. Do you want to save anyway?')) {
+      const confirm = await getUserConfirmation(
+        'One or more settings are invalid. Do you want to save anyway?',
+        ["Yes", "No"]
+      );
+
+      if (confirm === 0) {
         shouldSave = true;
       } else {
         // Do nothing!
@@ -1107,8 +1138,8 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
     
-    if(shouldSave) {
-      browser.storage.sync.set(tempSaveData);
+    if(shouldSave) {    
+      storageSetNoKey(tempSaveData);
     }
   }
 
@@ -1128,7 +1159,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function loadAllBackups() {
-    const result = await browser.storage.sync.get("backup");
+    const result = await storageGet("backup");
     backupList = Object.entries(result.backup || {}).map(([key, val]) => ({ ...val, index: key }));
     
     renderBackupList();
@@ -1138,24 +1169,24 @@ document.addEventListener("DOMContentLoaded", () => {
     const timestamp = Date.now();
     const key = Date.now().toString();
     const newBackup = { name, timestamp, data : getSaveSettingsData() };
-    const result = await browser.storage.sync.get("backup");
+    const result = await storageGet("backup");
     const backup = result.backup || {};
 
     backup[key] = newBackup;
-    await browser.storage.sync.set({ backup });
+    await storageSet("backup", backup);
     await loadAllBackups(); // Refresh list
   }
 
   async function deleteSettingsBackupAt(index) {
-    const result = await browser.storage.sync.get("backup");
+    const result = await storageGet("backup");
     const backup = result.backup || {};
     delete backup[index];
-    await browser.storage.sync.set({ backup });
+    await storageSet("backup", backup);
     await loadAllBackups();
   }
 
   async function loadSettingsFromBackup(index) {
-    const result = await browser.storage.sync.get("backup");
+    const result = await storageGet("backup");
     const backup = result.backup?.[index].data;
     if (!backup) return;
 
@@ -1165,6 +1196,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // Save colors to browser storage sync
   function getSaveSettingsData() {
     const themeColors = {
+      headerBg: headerBgColorPicker.value,
+      headerText: headerTextColorPicker.value,
       leftBg: leftBgColorPicker.value,
       leftText: leftTextColorPicker.value,
       centerBg: centerBgColorPicker.value,
@@ -1186,6 +1219,7 @@ document.addEventListener("DOMContentLoaded", () => {
       groupDividerColor: groupDividerColorControl.value || '#666666',
 
       cacheDuration: parseInt(cacheDurationInput.value, 10) ?? 10,
+      useThemeOverrides: !!useThemeOverridesCheckbox.checked,
       useTwoEmails: !!useTwoEmailsCheckbox.checked
     }
 
@@ -1194,29 +1228,65 @@ document.addEventListener("DOMContentLoaded", () => {
     return {themeColors, settings, shortcutsData};
   }
 
-  // Update colors based on user selection
-  function updateColors() {
-    document.getElementById("left-column").style.backgroundColor = leftBgColorPicker.value;
-    document.getElementById("left-column").style.color = leftTextColorPicker.value;
+  function updateCollapseStates() {
+    if (leftCollapsed) {
+      leftColumn.style.marginLeft = `-${leftColumn.offsetWidth + 5}px`; // Apply margin:
+      collapseHandleLeft.style.rotate = "180deg";
+    } else {
+      leftColumn.style.marginLeft = `0`; // Apply margin:
+      collapseHandleLeft.style.rotate = "0deg";
+    }
 
-    document.getElementById("center-column").style.backgroundColor = centerBgColorPicker.value;
-    document.getElementById("center-column").style.color = centerTextColorPicker.value;
-    
-
-    document.getElementById("right-column").style.backgroundColor = rightBgColorPicker.value;
-    document.getElementById("right-column").style.color = rightTextColorPicker.value;
+    if (rightCollapsed) {
+      rightColumn.style.marginRight = `-${rightColumn.offsetWidth + 5}px`; // Apply margin:
+      collapseHandleRight.style.rotate = "180deg";
+    } else {
+      rightColumn.style.marginRight = `0`; // Slide back
+      collapseHandleRight.style.rotate = "0deg";
+    }
   }
 
-  function checkAndApplyWindowTheme() {
-    if (DEMO_MODE) {
+  // Update colors based on user selection
+  function updateColors() {
+    setCssVariable("--header-bg-color-user", headerBgColorPicker.value);
+    setCssVariable("--header-text-color-user", headerTextColorPicker.value);
+
+    setCssVariable("--left-bg-color-user", leftBgColorPicker.value);
+    setCssVariable("--left-text-color-user", leftTextColorPicker.value);
+
+    setCssVariable("--center-bg-color-user", centerBgColorPicker.value);
+    setCssVariable("--center-text-color-user", centerTextColorPicker.value);
+
+    setCssVariable("--right-bg-color-user", rightBgColorPicker.value);
+    setCssVariable("--right-text-color-user", rightTextColorPicker.value);
+    setCssVariable("--right-text-color-secondary-user", rightTextColorPicker.value + "80");
+
+    if(useThemeOverrides) {
+      setCssVariable("--header-bg-color", "var(--header-bg-color-override)");
+      setCssVariable("--header-text-color", "var(--header-text-color-override)");
+
+      setCssVariable("--left-bg-color", "var(--left-bg-color-override)");
+      setCssVariable("--left-text-color", "var(--left-text-color-override)");
+
+      setCssVariable("--center-bg-color", "var(--center-bg-color-override)");
+      setCssVariable("--center-text-color", "var(--center-text-color-override)");
+
+      setCssVariable("--right-bg-color", "var(--right-bg-color-override)");
+      setCssVariable("--right-text-color", "var(--right-text-color-override)");
+      setCssVariable("--right-text-color-secondary", "var(--right-text-color-secondary-override)");
     } else {
-      if (isPrivateWindow) {
-        document.querySelector('.bg-gray-800')?.classList.replace('bg-gray-800', 'bg-purple-950');
-        const homeDisplay = document.getElementById("home-display");
-        if (homeDisplay) {
-          homeDisplay.innerText = "😏 Sneaky Mode";
-        }
-      }
+      setCssVariable("--header-bg-color", "var(--header-bg-color-user)");
+      setCssVariable("--header-text-color", "var(--header-text-color-user)");
+
+      setCssVariable("--left-bg-color", "var(--left-bg-color-user)");
+      setCssVariable("--left-text-color", "var(--left-text-color-user)");
+
+      setCssVariable("--center-bg-color", "var(--center-bg-color-user)");
+      setCssVariable("--center-text-color", "var(--center-text-color-user)");
+
+      setCssVariable("--right-bg-color", "var(--right-bg-color-user)");
+      setCssVariable("--right-text-color", "var(--right-text-color-user)");
+      setCssVariable("--right-text-color-secondary", "var(--right-text-color-secondary-user)");
     }
   }
   
@@ -1224,7 +1294,7 @@ document.addEventListener("DOMContentLoaded", () => {
   async function getCacheDuration() {
     var cacheDuration = 5; // default 5 minutes
     try {
-      const loadSettings = await browser.storage.sync.get("settings");
+      const loadSettings = await storageGet("settings");
       const settings = loadSettings.settings || {}
       
       cacheDuration = settings.cacheDuration;
@@ -1261,6 +1331,169 @@ document.addEventListener("DOMContentLoaded", () => {
     return null;
   }
 
+  async function storageGet(key) {
+    try {
+      if (!DEMO_MODE) {
+        const result = await browser.storage.sync.get(key);
+        return result || {};
+      } else {
+        // Always prefer the centralized `settings` blob in static mode.
+        // The modern format stores the data under { saveData: { themeColors, settings, shortcutsData } }
+        // Older format stored those keys at the top level of the blob.
+
+        // If somebody stored a per-key item separately, return it (backcompat).
+        const perItem = localStorage.getItem(key);
+        if (perItem !== null) {
+          try {
+            return { [key]: JSON.parse(perItem) };
+          } catch (e) {
+            console.error(`Error parsing localStorage item for ${key}:`, e);
+            return { [key]: undefined };
+          }
+        }
+
+        // Centralized blob is now stored under 'saveData' in localStorage.
+        // Keep backward compatibility with older 'settings' blob.
+        const settingsBlob = localStorage.getItem('saveData');
+        if (settingsBlob !== null) {
+          try {
+            const parsed = JSON.parse(settingsBlob);
+            const top = parsed && parsed.saveData ? parsed.saveData : parsed || {};
+
+            if (Object.prototype.hasOwnProperty.call(top, key)) {
+              return { [key]: top[key] };
+            }
+          } catch (e) {
+            console.error('Error parsing settings blob:', e);
+          }
+        }
+
+        // Not found — mirror browser.storage.get behavior by returning an object
+        return { [key]: undefined };
+      }
+    } catch (error) {
+      console.error(`Error getting ${key} from storage:`, error);
+      return null;
+    }
+  }
+
+  async function storageSetNoKey(value) {
+    console.log("Attempting to save to storage:", value);
+    if (!DEMO_MODE) {
+      await browser.storage.sync.set(value);
+      return value;
+    } else {
+      // In static mode, always work with the centralized saveData blob
+      try {
+        // Read the existing saveData from localStorage
+        let saveData = JSON.parse(localStorage.getItem('saveData') || '{}');
+
+        // Merge the new value into saveData
+        Object.assign(saveData, value);
+
+        // Write the entire updated saveData back to localStorage
+        localStorage.setItem('saveData', JSON.stringify(saveData));
+        return saveData;
+      } catch (e) {
+        console.error('Error setting static storage item:', e);
+      }
+    }
+  }
+
+  async function storageSet(key, value) {
+    try {
+      if (!DEMO_MODE) {
+        const obj = { [key]: value };
+        await browser.storage.sync.set(obj);
+        return obj;
+      } else {
+        // In static mode, always work with the centralized saveData blob
+        try {
+          // Read the existing saveData from localStorage
+          const blob = localStorage.getItem('saveData');
+          let currentData = {};
+          if (blob !== null) {
+            try {
+              currentData = JSON.parse(blob) || {};
+            } catch (e) {
+              console.error('Error parsing existing saveData blob:', e);
+              currentData = {};
+            }
+          }
+
+          // Merge the new key-value pair into the existing data
+          const updatedData = Object.assign({}, currentData, { [key]: value });
+
+          // Write the entire updated blob back to localStorage
+          localStorage.setItem('saveData', JSON.stringify(updatedData));
+          return { [key]: value };
+        } catch (e) {
+          console.error('Error setting static storage item:', e);
+          return null;
+        }
+      }
+    } catch (error) {
+      console.error(`Error setting ${key} in storage:`, error);
+      return null;
+    }
+  }
+
+  async function storageRemove(keys) {
+    try {
+      if (!DEMO_MODE) {
+        // Mirror browser.storage.sync.remove API
+        const keysArray = Array.isArray(keys) ? keys : [keys];
+        await browser.storage.sync.remove(keysArray);
+        return true;
+      } else {
+        // In static mode, remove keys from the saveData blob
+        try {
+          const blob = localStorage.getItem('saveData');
+          let currentData = {};
+          if (blob !== null) {
+            try {
+              currentData = JSON.parse(blob) || {};
+            } catch (e) {
+              console.error('Error parsing existing saveData blob:', e);
+              return false;
+            }
+          }
+
+          // Remove the specified keys
+          const keysArray = Array.isArray(keys) ? keys : [keys];
+          keysArray.forEach(key => {
+            delete currentData[key];
+          });
+
+          // Write the updated blob back to localStorage
+          localStorage.setItem('saveData', JSON.stringify(currentData));
+          return true;
+        } catch (e) {
+          console.error('Error removing from static storage:', e);
+          return false;
+        }
+      }
+    } catch (error) {
+      console.error(`Error removing keys from storage:`, error);
+      return false;
+    }
+  }
+
+  async function storageEmpty() {
+    try {
+      if (!DEMO_MODE) {
+        const result = await browser.storage.sync.getBytesInUse();
+        return (result === 0);
+      } else {
+        const item = localStorage.getItem('saveData');
+        return (item === null);
+      }
+    } catch (error) {
+      console.error("Error checking if storage is empty:", error);
+      return true; // Assume empty on error
+    }
+  }
+
   async function setCachedData(cacheKey, data, timestamp = Date.now()) {
     const cache = {
       timestamp,
@@ -1273,20 +1506,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function buildGoogleAuthUrl() {
     const redirectUri = browser.identity.getRedirectURL();
-    const { verifier, challenge } = await generatePKCE();
-
-    // Store verifier temporarily
-    sessionStorage.setItem("pkce_verifier", verifier);
-
+    const challenge = await generateCodeChallenge(pkce_verifier);
+    
     const params = new URLSearchParams({
       client_id: CLIENT_ID,
       response_type: "code",
       redirect_uri: redirectUri,
       scope: SCOPES,
-      access_type: "offline",
-      prompt: "consent",
       code_challenge: challenge,
-      code_challenge_method: "S256"
+      code_challenge_method: "S256",
     });
 
     return `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
@@ -1311,22 +1539,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 2) Launch the flow and extract the `access_token` from the redirect URL
   async function getAccessToken() {
-    const authUrl = buildGoogleAuthUrl();
+    const authUrl = await buildGoogleAuthUrl();
+
     const redirectResponse = await browser.identity.launchWebAuthFlow({
       interactive: true,
       url: authUrl
     });
   
     const urlParams = new URL(redirectResponse).searchParams;
+
     const code = urlParams.get("code");
     if (!code) throw new Error("No auth code returned");
+
   
     const tokenData = await browser.runtime.sendMessage({
       type: "exchangeAuthCode",
       code
     });
-
-    console.log("Obtained new access token", tokenData);
   
     const newExpiry = Date.now() + tokenData.expiresIn * 1000;
   
@@ -1471,18 +1700,22 @@ document.addEventListener("DOMContentLoaded", () => {
   async function fetchBinData(){
     try {
       // ADDRINFOURL is found in privateVars as it can contain sensetive info
-      const result = await getBasicResponseWithCache(ADDRINFOURL, CACHE.BIN_INFO);
+      let binDays;
+      if (DEMO_MODE) {
+        binDays = generateFakeBinData();
+      } else {
+        result = await getBasicResponseWithCache(ADDRINFOURL, CACHE.BIN_INFO);
 
-      const binDays = {
-        FOGO: result.data.BinDayFOGOFormatted,
-        General: result.data.BinDayGeneralWasteFormatted,
-        Recycling: result.data.BinDayRecyclingFormatted
-      };
+        binDays = {
+          FOGO: result.data.BinDayFOGOFormatted,
+          General: result.data.BinDayGeneralWasteFormatted,
+          Recycling: result.data.BinDayRecyclingFormatted
+        };
+      }
 
       if (binDays.FOGO == "0001-01-01T00:00:00" || binDays.General == "0001-01-01T00:00:00"  || binDays.Recycling == "0001-01-01T00:00:00" ) {
         console.warn("Bin days data is corrupted or not available");
-      } else {
-        console.log(binDays);
+      } else {        
         renderBinDays(binDays);
       }
     } catch (error) {
@@ -1512,7 +1745,10 @@ document.addEventListener("DOMContentLoaded", () => {
     var tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1); // Get tomorrow's date
 
-    if(genWasteDateTime<recycleDateTime) {
+    if (DEMO_MODE) {
+      binImg.classList.add('bin-general');
+      binText.innerHTML = "Put out the bins! (Not realy, this is just a demo)";
+    } else if(genWasteDateTime<recycleDateTime) {
       binImg.classList.add('bin-general');
       if(today == genWasteDateTime.setHours(0, 0, 0, 0)) {
         binText.innerHTML = "Today";
@@ -1524,9 +1760,10 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       binImg.classList.add('bin-recycling');
       binLong.classList.add('flex-row-reverse');
-      if(today == recycleDateTime.setHours(0, 0, 0, 0)) {
+
+      if (today == recycleDateTime.setHours(0, 0, 0, 0)) {
         binText.innerHTML = "Today";
-      } else if(tomorrow.getTime() == recycleDateTime.setHours(0, 0, 0, 0)) {
+      } else if (tomorrow.getTime() == recycleDateTime.setHours(0, 0, 0, 0)) {
         binText.innerHTML = "Put out the bins!";
       } else {
         binText.innerHTML = recyclingStr;
@@ -1553,7 +1790,11 @@ document.addEventListener("DOMContentLoaded", () => {
       while (container.firstChild) {
         container.removeChild(container.firstChild);
       }
-      createAccountSignInButtons(container);
+      if (DEMO_MODE) {
+        createFakeAccountSignInButtons(container);
+      } else {
+        createAccountSignInButtons(container);
+      }
     });
 
     if(notLoggedIn) {
@@ -1563,7 +1804,11 @@ document.addEventListener("DOMContentLoaded", () => {
         while (container.firstChild) {
           container.removeChild(container.firstChild);
         }
-        createAccountSignInButtons(container);
+        if (DEMO_MODE) {
+          createFakeAccountSignInButtons(container);
+        } else {
+          createAccountSignInButtons(container);
+        }
       });
     }
   }
@@ -1674,12 +1919,12 @@ document.addEventListener("DOMContentLoaded", () => {
         msgResp = {
           payload: {
             headers: [
-              { name: 'From', value: `${fakeEmails[i].name} <${fakeEmails[i].email}>` },
+              { name: 'From', value: `${fakeEmails[i].from} <${fakeEmails[i].email}>` },
               { name: 'Subject', value: fakeEmails[i].subject },
               { name: 'Date', value: fakeEmails[i].date.toISOString() }
             ]
           }
-        };
+        };        
       } else {
         msgResp = await getTokenedResponse(msgUrl, which, `${CACHE.EMAIL_MSG}_${which}_${i}`);
       }
@@ -1741,7 +1986,7 @@ document.addEventListener("DOMContentLoaded", () => {
       rawTasks = generateFakeTasks();
     } else {
       rawTasks = await getTokenedResponse(url, 1, CACHE.TASKS);
-    }
+    }  
   
     const items = rawTasks.items || [];
   
@@ -1810,11 +2055,10 @@ document.addEventListener("DOMContentLoaded", () => {
     // 5. Recursive render function
     function renderTask(task) {
       const li = document.createElement('li');
-      li.className = 'task-entry';
+      li.className = `task-entry ${task.status === 'completed' ? 'task-completed' : ''}`;
   
       li.innerHTML = `
         <span class="task-title">${task.title}</span>
-        ${task.status === 'completed' ? '<span class="task-status">✔️</span>' : ''}
         ${task.due ? renderDueDate(task.due) : ''}
         ${task.notes ? `<div class="task-details">${task.notes}</div>` : ''}
       `;
@@ -1865,8 +2109,14 @@ document.addEventListener("DOMContentLoaded", () => {
     url.searchParams.append("singleEvents", "true");
     url.searchParams.append("orderBy", "startTime");
     url.searchParams.append("maxResults", "250");
-  
-    const resp = await getTokenedResponse(url, 1, CACHE.CALENDAR);
+
+    let resp = null;
+    if (DEMO_MODE) {
+      // Generate fake calendar data for static page mode
+      resp = { items: generateFakeCalendarEvents() };
+    } else {
+      resp = await getTokenedResponse(url, 1, CACHE.CALENDAR);
+    }
   
     // Render top 5 upcoming events
     eventsContainer.innerHTML = "";
@@ -2086,19 +2336,46 @@ document.addEventListener("DOMContentLoaded", () => {
   // Initial function to load data when the new tab opens
   async function init() {
     versionDisplay.textContent = `v${VERSION}`;
-    // Load colors on startup
-    if(typeof browser !== 'undefined') {
-      await loadSettingsFromSync();
-      isPrivateWindow = await checkPrivateWindow();
-    } else {
-      loadSettingsFromVars();
+
+    leftCollapsed = localStorage.getItem("leftColumnCollapsed") === "true";
+    rightCollapsed = localStorage.getItem("rightColumnCollapsed") === "true";
+    
+    updateCollapseStates();
+
+    if (DEMO_MODE) {
       isPrivateWindow = false;
+    } else {
+      isPrivateWindow = await checkPrivateWindow();
     }
-    // Initialize Private Window Theme
-    await checkAndApplyWindowTheme();
+
+    checkAndApplyWindowTheme();
+    
+    // Load colors on startup
+    await loadSettingsFromStorage();
 
     refreshHeader();
     refreshSidebars();
+
+    setTimeout(() => {
+      leftColumn.classList.add("duration-300");
+      rightColumn.classList.add("duration-300");
+      content.classList.remove("opacity-0");
+    }, 50);   
+    
+    if (DEMO_MODE) {
+      const settingsObj = await storageGet("settings");
+      const shortcutsDataObj = await storageGet("shortcutsData");
+
+      if (settingsObj.settings === undefined && shortcutsDataObj.shortcutsData === undefined) {
+        const confirm = await getUserConfirmation(
+          'Welcome to the demo mode of my new tab page!\n' +
+          'In this mode, emails, tasks, calendar events and bin dates are generated examples and not connected to any real accounts.\n\n' +
+          'However the weather, date, settings and shortcuts are all functional so you can get a feel for how the page will work when fully set up.\n\n' + 
+          'Settings are stored in your browsers local storage so feel free to customize the page and refresh to see how settings persist but keep in mind it will not work in incognito.\n\n',
+          ["I understand, show me the demo!"]
+        );
+      }
+    }
   }
 
   async function refreshHeader() {
@@ -2110,7 +2387,12 @@ document.addEventListener("DOMContentLoaded", () => {
       year: 'numeric'
     });
 
-    const weatherInfo = await getBasicResponseWithCache(WEATHER_API, CACHE.WEATHER);
+    headerDate.innerHTML = `
+      <span class="font-semibold mx-1">
+        ${dateDisplay}
+      </span>`;
+
+    const weatherInfo = await getBasicResponseWithCache(WEATHER_API + `&latitude=${gps[0]}&longitude=${gps[1]}`, CACHE.WEATHER);
 
     if (weatherInfo) {
       const weatherToday = todayWeather(weatherInfo);
@@ -2123,8 +2405,8 @@ document.addEventListener("DOMContentLoaded", () => {
         <span class="font-semibold mx-1">
           ${weatherToday.temp}°C
         </span>
-        <div class="min-max-display mx-1 text-xs text-gray-300">
-          <span class="temp-min border-b border-gray-600">
+        <div class="min-max-display mx-1 text-xs text-(--header-text-override)/80">
+          <span class="temp-min border-b border-(--header-text-override)/90">
             ${weatherToday.minTemp}°C
           </span>
           <span class="temp-max">
@@ -2132,10 +2414,6 @@ document.addEventListener("DOMContentLoaded", () => {
           </span>
         </div>`;
     }
-    headerDate.innerHTML = `
-        <span class="font-semibold mx-1">
-          ${dateDisplay}
-        </span>`;
   }
 
   function todayWeather(weatherInfo) {
@@ -2163,6 +2441,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // [FIXME] add mode cachekey types and delete them properly
   async function refreshSidebars(force = false) {
+    if (DEMO_MODE) {
+      refreshSidebarsDemoMode(force);
+      return;
+    }
+
     if(force) {
       for (const cacheKeyType in CACHE) {
         const cacheKey = CACHE[cacheKeyType]
@@ -2205,6 +2488,16 @@ document.addEventListener("DOMContentLoaded", () => {
     fetchBinData();
   }
 
+  async function refreshSidebarsDemoMode(force = false) {
+    fetchEmails(1);
+    fetchTasks();
+    fetchCalendar();
+
+    initializeAccountSignInButtons(false);
+
+    fetchBinData();
+  }
+
   function getUserConfirmation(promptText, options = ["Ok"]) {
     return new Promise((resolve) => {
       const modal = document.createElement("div");
@@ -2212,7 +2505,7 @@ document.addEventListener("DOMContentLoaded", () => {
   
       const box = document.createElement("div");
       box.className = "bg-gray-800 text-white p-6 rounded-lg shadow-lg max-w-md w-full";
-      box.innerHTML = `<div class="mb-4">${promptText}</div>`;
+      box.innerHTML = `<div class="mb-4 whitespace-pre-wrap">${promptText}</div>`;
   
       const buttonRow = document.createElement("div");
       buttonRow.className = "flex justify-end gap-2";
@@ -2241,28 +2534,11 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  function base64UrlEncode(buffer) {
-    return btoa(String.fromCharCode(...new Uint8Array(buffer)))
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_")
-      .replace(/=+$/, "");
-  }
+  userConfirmation = getUserConfirmation;
 
-  async function generatePKCE() {
-    const verifier = base64UrlEncode(crypto.getRandomValues(new Uint8Array(32)));
+  // function setCssVariable(variable, value) {
+  //   document.documentElement.style.setProperty(variable, value);
+  // }
 
-    const encoder = new TextEncoder();
-    const data = encoder.encode(verifier);
-    const digest = await crypto.subtle.digest("SHA-256", data);
-    const challenge = base64UrlEncode(digest);
-
-    return { verifier, challenge };
-  }
-
-  function setCssVariable(variable, value) {
-    document.documentElement.style.setProperty(variable, value);
-  }
-
-  // Call init on page load
   init();
 });

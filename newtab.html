@@ -10,126 +10,181 @@
   <link rel="stylesheet" href="fontawesome/index.css">
   <link rel="stylesheet" href="style.css?v=1">
   <script src="fontawesome/index.js" defer></script>
-  <script src="getEnv.js" defer></script>
+  <script src="utils/getEnv.js" defer></script>
+  <script src="utils/fakeData.js" defer></script>
+  <script src="utils/theme.js" defer></script>
+  <script src="utils/misc.js" defer></script>
+  <script src="privateVars.js" defer></script>
   <script src="newtab.js" defer></script>
 </head>
 <body class="flex flex-col bg-gray-900 text-white font-sans antialiased h-screen max-h-screen relative">
-  <!-- Header -->
-  <header class="p-4 bg-gray-800 text-white flex justify-between items-center">
-    <h1 id="home-display" class="text-xl">🏠 Home</h1>
-    <span id="weather" class="flex justify-between items-center"></span>
-    <span id="date"></span>
-    <div>
-      <button id="settings-button" class="text-gray-400 hover:text-white">⚙️</button>
-      <div class="relative inline-block">
-        <button id="login-button" class="text-gray-400 hover:text-white">🪵</button>
-        <div id="auth-dropdown" class="hidden absolute right-0 mt-2 w-48 bg-gray-700 text-white rounded shadow-lg z-50" data-accountsigninforce>
+  <div id="content" class="flex flex-col bg-gray-900 text-white font-sans antialiased h-screen max-h-screen relative opacity-0 transition-opacity duration-500">
+    <!-- Header -->
+    <header id="header" class="p-4 bg-(--header-bg-color) text-(--header-text-color) flex justify-between items-center">
+      <h1 id="home-display" class="text-xl font-bold">🏠 Home</h1>
+      <span id="weather" class="flex justify-between items-center"></span>
+      <span id="date"></span>
+      <div class="flex justify-center items-center gap-4 text-(--header-text-color)">
+        <button id="settings-button" class="size-8">
+          <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path fill-rule="evenodd" clip-rule="evenodd"
+              d="M12.7848 0.449982C13.8239 0.449982 14.7167 1.16546 14.9122 2.15495L14.9991 2.59495C15.3408 4.32442 17.1859 5.35722 18.9016 4.7794L19.3383 4.63233C20.3199 4.30175 21.4054 4.69358 21.9249 5.56605L22.7097 6.88386C23.2293 7.75636 23.0365 8.86366 22.2504 9.52253L21.9008 9.81555C20.5267 10.9672 20.5267 13.0328 21.9008 14.1844L22.2504 14.4774C23.0365 15.1363 23.2293 16.2436 22.7097 17.1161L21.925 18.4339C21.4054 19.3064 20.3199 19.6982 19.3382 19.3676L18.9017 19.2205C17.1859 18.6426 15.3408 19.6754 14.9991 21.405L14.9122 21.845C14.7167 22.8345 13.8239 23.55 12.7848 23.55H11.2152C10.1761 23.55 9.28331 22.8345 9.08781 21.8451L9.00082 21.4048C8.65909 19.6754 6.81395 18.6426 5.09822 19.2205L4.66179 19.3675C3.68016 19.6982 2.59465 19.3063 2.07505 18.4338L1.2903 17.1161C0.770719 16.2436 0.963446 15.1363 1.74956 14.4774L2.09922 14.1844C3.47324 13.0327 3.47324 10.9672 2.09922 9.8156L1.74956 9.52254C0.963446 8.86366 0.77072 7.75638 1.2903 6.8839L2.07508 5.56608C2.59466 4.69359 3.68014 4.30176 4.66176 4.63236L5.09831 4.77939C6.81401 5.35722 8.65909 4.32449 9.00082 2.59506L9.0878 2.15487C9.28331 1.16542 10.176 0.449982 11.2152 0.449982H12.7848ZM12 15.3C13.8225 15.3 15.3 13.8225 15.3 12C15.3 10.1774 13.8225 8.69998 12 8.69998C10.1774 8.69998 8.69997 10.1774 8.69997 12C8.69997 13.8225 10.1774 15.3 12 15.3Z" />
+          </svg>
+        </button>
+        <div class="relative flex">
+          <button id="login-button" class="size-8">
+            <svg fill="currentColor" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg"
+              xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 512.002 512.002" xml:space="preserve">
+              <g>
+                <g>
+                  <path d="M502.474,267.309l-79.516-76.422V89.044c0-50.755-66.983-89.043-155.826-89.043S111.306,38.29,111.306,89.044v154.045
+                  l-22.728-18.187c0.089-0.779,0.467-1.469,0.467-2.293v-44.522c0-12.288-9.973-22.261-22.261-22.261
+                  c-12.288,0-22.261,9.973-22.261,22.261v11.576l-8.348-6.678c-9.572-7.68-23.619-6.144-31.299,3.473
+                  c-7.68,9.594-6.122,23.619,3.495,31.276L111.306,300.1v145.119c0,39.958,62.62,66.783,155.826,66.783
+                  c94.675,0,155.826-26.201,155.826-66.783v-95.121l1.736,1.002c5.677,4.43,12.511,6.656,19.367,6.656
+                  c8.058,0,16.117-3.05,22.261-9.194l36.441-36.463c5.966-5.921,9.238-13.846,9.238-22.239
+                  C512.002,281.445,508.729,273.542,502.474,267.309z M244.871,267.131c0,12.31-9.973,22.261-22.261,22.261
+                  s-22.261-9.951-22.261-22.261V244.87c0-12.288,9.973-22.261,22.261-22.261s22.261,9.973,22.261,22.261V267.131z M333.915,378.436
+                  c0,12.31-9.973,22.261-22.261,22.261c-12.288,0-22.261-9.951-22.261-22.261v-22.261c0-12.288,9.973-22.261,22.261-22.261
+                  c12.288,0,22.261,9.973,22.261,22.261V378.436z M267.132,133.566c-67.94,0-111.304-26.357-111.304-44.522
+                  c0-18.143,43.364-44.522,111.304-44.522s111.304,26.379,111.304,44.522C378.436,107.209,335.072,133.566,267.132,133.566z
+                  M442.147,309.783l-19.189-11.019v-46.125l38.912,37.398L442.147,309.783z" />
+                </g>
+              </g>
+            </svg>
+          </button>
+          <div id="auth-dropdown" class="hidden absolute right-0 mt-10 w-48 bg-gray-700 text-white rounded shadow-lg z-50" data-accountsigninforce>
+          </div>
         </div>
       </div>
-      <div id="last-updated-wrapper" class="text-gray-400 hover:text-white">
-        <span>Last refreshed: </span><span id="last-updated">Never</span>
-      </div>
-    </div>
-  </header>
-
-  <!-- Main Content -->
-  <main class="flex flex-grow overflow-hidden p-4 pb-0 space-x-4">
-    <!-- Left Column -->
-    <section id="left-column" class="w-1/4 max-w-xl space-y-6 bg-gray-800 p-4 rounded">
-      <a href="http://gmail.com">
-        <h2 class="text-lg font-semibold">Emails</h2>
-      </a>
-
-      <div id="email-list" class="text-sm">
-        <div id="email-loading" style="height:600px" class="flex">
-          <div class="sidepanel-container flex-grow overflow-hidden" data-accountsignin></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Center Column -->
-    <section id="center-column" class="flex flex-grow flex-col w-1/2 p-4 h-full rounded shadow overflow-hidden">
-      <div class="overflow-y-auto" id="shortcuts">Loading Shortcuts...</div>
-    </section>
-
-    <!-- Right Column -->
-    <section id="right-column" class="flex flex-col justify-between w-1/4 max-w-xl space-y-6 bg-gray-800 p-4 rounded">
-      <div class="flex flex-col flex-grow overflow-hidden space-y-2">
-        <a href="https://tasks.google.com/" class="flex-none">
-          <h2 class="text-lg font-semibold inline-block">Tasks</h2>
+    </header>
+    
+    <!-- Main Content -->
+    <main class="flex flex-grow overflow-hidden p-4 pb-0 space-x-4">
+      <!-- Left Column -->
+      <section id="left-column" class="w-1/4 max-w-xl space-y-6 bg-(--left-bg-color) text-(--left-text-color) p-4 rounded relative transition-[margin]">
+        <a href="http://gmail.com">
+          <h2 class="text-lg font-semibold">Emails</h2>
         </a>
-        <div class="sidepanel-container flex-grow overflow-hidden">
-          <ul class="overflow-y-auto max-h-full pr-2" data-accountsignin id="tasks-list"></ul>
+        
+        <div id="email-list" class="text-sm">
+          <div id="email-loading" style="height:600px" class="flex">
+            <div class="sidepanel-container flex-grow overflow-hidden" data-accountsignin></div>
+          </div>
+        </div>
+        <!-- Handle for collapsing -->
+        <div id="collapse-handle-left" class="absolute -right-2 top-1/2 transform -translate-y-1/2 p-1.5 pl-0 rounded text-2xl text-(--left-text-color) bg-(--left-bg-color) cursor-pointer group">
+          <span class="opacity-30 group-hover:opacity-100">🞀</span>
+        </div>
+      </section>
+      
+      <!-- Center Column -->
+      <section id="center-column" class="flex flex-grow flex-col p-4 h-full rounded shadow overflow-hidden bg-(--center-bg-color) text-(--center-text-color) transition-[margin]">
+        <div class="overflow-y-auto" id="shortcuts">Loading Shortcuts...</div>
+      </section>
+      
+      <!-- Right Column -->
+      <section id="right-column" class="flex flex-col justify-between w-1/4 max-w-xl space-y-6 bg-(--right-bg-color) text-(--right-text-color) p-4 rounded relative transition-[margin]">
+        <div class="flex flex-col flex-grow overflow-hidden space-y-2">
+          <a href="https://tasks.google.com/" class="flex-none">
+            <h2 class="text-lg font-semibold inline-block">Tasks</h2>
+          </a>
+          <div class="sidepanel-container flex-grow overflow-hidden">
+            <ul class="overflow-y-auto max-h-full pr-2" data-accountsignin id="tasks-list"></ul>
+          </div>
+        </div>
+        <div id="calendar-container" class="">
+          <h2 class="text-lg font-semibold">Calendar</h2>
+          <ul class="sidepanel-container" id="calendar-events"></ul>
+          <div id="calendar-header"></div>
+          <div id="calendar-grid"></div>
+        </div>
+
+        <!-- Handle for collapsing -->
+        <div id="collapse-handle-right"
+          class="absolute -left-2 top-1/2 transform -translate-y-1/2 p-1.5 pr-0 rounded text-2xl text-(--left-text-color) bg-(--left-bg-color) cursor-pointer group">
+          <span class="opacity-30 group-hover:opacity-100">🞂</span>
+        </div>
+      </section>
+    </main>
+    
+    <footer class="flex justify-between bottom-0 mt-auto relative">
+      <div class="flex items-center text-sm text-white/30 gap-4">
+        <img src="icons/icon.ico" alt="" width="24" class="m-2 mr-0">
+        <span id="version-text" class="hover:text-white"></span>
+        <div id="last-updated-wrapper" class="hover:text-white">
+          <span>Last refreshed: </span><span id="last-updated">Never</span>
         </div>
       </div>
-      <div id="calendar-container" class="">
-        <h2 class="text-lg font-semibold">Calendar</h2>
-        <ul class="sidepanel-container" id="calendar-events"></ul>
-        <div id="calendar-header"></div>
-        <div id="calendar-grid"></div>
-      </div>
-    </section>
-  </main>
-
-  <footer class="flex justify-between bottom-0 mt-auto relative">
-    <div class="flex items-center">
-      <img src="icons/icon.ico" alt="" width="24" class="m-2">
-      <span class="text-sm text-gray-400/30 hover:text-gray-400" id="version-text"></span>
-    </div>
-    <div id="bin-days" class="flex items-center bins-disabled">
-      <div id="bin-short" class="flex flex-row">
-        <img id="bin-main-img" src="icons/bin.png" alt="" class="my-auto size-7">
-        <img src="icons/bin.png" alt="" class="my-auto size-7 bin-disabled">
-        <span id="bin-days-text" class="ml-2 my-auto"></span>
-      </div>
-      <div id="bin-long" class="flex flex-row items-center">
-        <div class="flex flex-row">
-          <img src="icons/bin.png" alt="" class="my-auto size-7 bin-general ml-4">
-          <span id="bin-days-textlong-general" class="ml-2 mr-4 my-auto"></span>
+      <div id="bin-days" class="flex items-center bins-disabled">
+        <div id="bin-short" class="flex flex-row">
+          <img id="bin-main-img" src="icons/bin.png" alt="" class="my-auto size-7">
+          <img src="icons/bin.png" alt="" class="my-auto size-7 bin-disabled">
+          <span id="bin-days-text" class="ml-2 my-auto"></span>
         </div>
-        <div class="flex flex-row">
-          <img src="icons/bin.png" alt="" class="my-auto size-7 bin-recycling ml-4">
-          <span id="bin-days-textlong-recycling" class="ml-2 mr-4 my-auto"></span>
+        <div id="bin-long" class="flex flex-row items-center">
+          <div class="flex flex-row">
+            <img src="icons/bin.png" alt="" class="my-auto size-7 bin-general ml-4">
+            <span id="bin-days-textlong-general" class="ml-2 mr-4 my-auto"></span>
+          </div>
+          <div class="flex flex-row">
+            <img src="icons/bin.png" alt="" class="my-auto size-7 bin-recycling ml-4">
+            <span id="bin-days-textlong-recycling" class="ml-2 mr-4 my-auto"></span>
+          </div>
         </div>
       </div>
-    </div>
-    <span id="copyright" class="bottom-0 m-1 mt-auto text-sm">© GroxicTinch 2025</span>
-  </footer>
-
-  <!-- Settings Modal -->
-  <div id="settings-modal" class="fixed inset-0 hidden flex items-center justify-center bg-black/50">
-    <div class="bg-gray-800 w-11/12 max-w-4xl rounded-lg shadow-lg max-h-[80vh] flex flex-col overflow-hidden">
-      <div class="p-6 sticky top-0 bg-gray-800 z-10">
-        <h2 class="text-lg font-semibold text-white mb-0">Settings</h2>
-      </div>
-
-      <div class="px-6 overflow-auto flex-1">
-        <div id="main-settings-panel">
-        <!-- Color Picker Grid -->
-        <div class="space-y-6">
-          <!-- Text Colors Row -->
-          <div>
-            <h3 class="text-md font-semibold text-white mb-1">Text Colors:</h3>
-            <div class="grid grid-cols-3 gap-4 bg-gray-700 p-4 rounded">
-              <div class="flex flex-col items-center">
-                <label for="left-text-color" class="text-white mb-1">Left</label>
-                <input type="color" id="left-text-color" class="w-12 h-6 border rounded" />
+      <span id="copyright" class="bottom-0 m-1 mt-auto text-sm">© GroxicTinch 2025</span>
+    </footer>
+    
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="fixed inset-0 hidden flex items-center justify-center bg-black/50">
+      <div class="bg-gray-800 w-11/12 max-w-4xl rounded-lg shadow-lg max-h-[80vh] flex flex-col overflow-hidden">
+        <div class="p-6 sticky top-0 bg-gray-800 z-10">
+          <h2 class="text-lg font-semibold text-white mb-0">Settings</h2>
+        </div>
+        
+        <div class="px-6 flex-1 overflow-auto flex flex-col lg:flex-row">
+          <div class="flex-1 space-y-6 md:pr-4 border-r border-gray-500 md:border-none">
+            <!-- Add divider on larger screens -->
+            <!-- Color Picker Grid -->
+            <div>
+              <h3 class="text-md font-semibold text-white mb-1">Text Colors:</h3>
+              <div class="grid grid-cols-3 gap-4 bg-gray-700 p-4 pb-0 rounded-t">
+                <div></div>
+                <div class="flex flex-col items-center">
+                  <label for="header-text-color" class="text-white mb-1">Header</label>
+                  <input type="color" id="header-text-color" class="w-12 h-6 border rounded" />
+                </div>
+                <div></div>
               </div>
-              <div class="flex flex-col items-center">
-                <label for="center-text-color" class="text-white mb-1">Center</label>
-                <input type="color" id="center-text-color" class="w-12 h-6 border rounded" />
-              </div>
-              <div class="flex flex-col items-center">
-                <label for="right-text-color" class="text-white mb-1">Right</label>
-                <input type="color" id="right-text-color" class="w-12 h-6 border rounded" />
+              <div class="grid grid-cols-3 gap-4 bg-gray-700 p-4 rounded-b">
+                <div class="flex flex-col items-center">
+                  <label for="left-text-color" class="text-white mb-1">Left</label>
+                  <input type="color" id="left-text-color" class="w-12 h-6 border rounded" />
+                </div>
+                <div class="flex flex-col items-center">
+                  <label for="center-text-color" class="text-white mb-1">Center</label>
+                  <input type="color" id="center-text-color" class="w-12 h-6 border rounded" />
+                </div>
+                <div class="flex flex-col items-center">
+                  <label for="right-text-color" class="text-white mb-1">Right</label>
+                  <input type="color" id="right-text-color" class="w-12 h-6 border rounded" />
+                </div>
               </div>
             </div>
-          </div>
-    
-          <!-- Background Colors Row -->
-          <div>
-            <h3 class="text-md font-semibold text-white mb-1">Background Colors:</h3>
-            <div class="grid grid-cols-3 gap-4 bg-gray-700 p-4 rounded">
+            
+            <!-- Background Colors Row -->
+            <div>
+              <h3 class="text-md font-semibold text-white mb-1">Background Colors:</h3>
+              <div class="grid grid-cols-3 gap-4 bg-gray-700 p-4 pb-0 rounded-t">
+                <div></div>
+                <div class="flex flex-col items-center">
+                  <label for="header-bg-color" class="text-white mb-1">Header</label>
+                  <input type="color" id="header-bg-color" class="w-12 h-6 border rounded" />
+                </div>
+                <div></div>
+              </div>
+              <div class="grid grid-cols-3 gap-4 bg-gray-700 p-4 rounded-b">
                 <div class="flex flex-col items-center">
                   <label for="left-bg-color" class="text-white mb-1">Left</label>
                   <input type="color" id="left-bg-color" class="w-12 h-6 border rounded" />
@@ -144,170 +199,195 @@
                 </div>
               </div>
             </div>
-            </div>
-
-          <div class="mt-4 space-y-4">
-            <h2 class="text-xl font-semibold text-white border-b border-gray-500 pb-1">Cache:</h2>
-            <div class="flex flex-col space-y-2"> <!-- Changed to flex-col for vertical stacking -->
-              <div class="flex justify-center items-center">
-                <label for="cache-duration" class="text-white">Duration:</label>
-                <input id="cache-duration" class="ml-2 w-20 h-10 p-2 rounded-md bg-white/10 focus-visible:outline-0" type="number" min="0" value="5">
-                <span class="pl-2">minutes</span>
+            
+            <div id="shortcuts-settings" class="text-white space-y-4 mt-4">
+              <h2 class="text-xl font-semibold border-b border-gray-500 pb-1">Shortcut Appearance</h2>
+              <div class="grid grid-cols-2 gap-4">
+                <label class="flex flex-col">
+                  Icon Size
+                  <input id="shortcut-icon-size" type="range" min="12" max="64" value="32" />
+                </label>
+                <label class="flex flex-col">
+                  Text Size
+                  <input id="shortcut-text-size" type="range" min="10" max="24" value="14" />
+                </label>
+                <label class="flex flex-col">
+                  X Padding
+                  <input id="shortcut-padding-x" type="range" min="0" max="128" value="12" />
+                </label>
+                <label class="flex flex-col">
+                  Y Padding
+                  <input id="shortcut-padding-y" type="range" min="0" max="128" value="12" />
+                </label>
+                <label class="flex flex-col">
+                  X Margin
+                  <input id="shortcut-margin-x" type="range" min="0" max="128" value="12" />
+                </label>
+                <label class="flex flex-col">
+                  Y Margin
+                  <input id="shortcut-margin-y" type="range" min="0" max="128" value="12" />
+                </label>
+                <label class="flex flex-col">
+                  Text Color
+                  <input id="shortcut-text-color" class="w-12 h-6 border rounded" type="color" value="#ffffff" />
+                </label>
+                <label class="flex flex-col">
+                  Border Radius
+                  <input id="shortcut-radius" type="range" min="0" max="50" value="12" />
+                </label>
+              </div>
+              
+              <h2 class="text-xl font-semibold border-b border-gray-500 pt-4 pb-1">Group Appearance</h2>
+              <div class="grid grid-cols-2 gap-4">
+                <label class="flex flex-col">
+                  Group Text Size
+                  <input id="group-text-size" type="range" min="10" max="24" value="16" />
+                </label>
+                <label class="flex flex-col">
+                  Divider Color
+                  <input id="group-divider-color" class="w-12 h-6 border rounded" type="color" value="#666666" />
+                </label>
               </div>
             </div>
           </div>
-
-          <div id="shortcuts-settings" class="text-white space-y-4 mt-4">
-            <h2 class="text-xl font-semibold border-b border-gray-500 pb-1">Shortcut Appearance</h2>
-          
-            <div class="grid grid-cols-2 gap-4">
-              <label class="flex flex-col">
-                Icon Size
-                <input id="shortcut-icon-size" type="range" min="12" max="64" value="32" />
-              </label>
-          
-              <label class="flex flex-col">
-                Text Size
-                <input id="shortcut-text-size" type="range" min="10" max="24" value="14" />
-              </label>
-          
-              <label class="flex flex-col">
-                X Padding
-                <input id="shortcut-padding-x" type="range" min="0" max="128" value="12" />
-              </label>
-          
-              <label class="flex flex-col">
-                Y Padding
-                <input id="shortcut-padding-y" type="range" min="0" max="128" value="12" />
-              </label>
-          
-              <label class="flex flex-col">
-                X Margin
-                <input id="shortcut-margin-x" type="range" min="0" max="128" value="12" />
-              </label>
-          
-              <label class="flex flex-col">
-                Y Margin
-                <input id="shortcut-margin-y" type="range" min="0" max="128" value="12" />
-              </label>
-          
-              <label class="flex flex-col">
-                Text Color
-                <input id="shortcut-text-color" class="w-12 h-6 border rounded" type="color" value="#ffffff" />
-              </label>
-          
-              <label class="flex flex-col">
-                Border Radius
-                <input id="shortcut-radius" type="range" min="0" max="50" value="12" />
-              </label>
+          <!-- Right Column of Settings -->
+          <div class="flex-1 space-y-4 md:pl-4">
+            <div class="mt-4">
+              <h2 class="text-xl font-semibold text-white border-b border-gray-500 pb-1">Theme</h2>
+              <div class="flex items-center space-x-2 mt-2">
+                <input type="checkbox" id="use-theme-overrides" class="h-4 w-4 bg-white/10 rounded" />
+                <label for="use-theme-overrides" class="text-white">Allow overrides(for forcing colors in demo mode or private window)</label>
+              </div>
             </div>
-          
-            <h2 class="text-xl font-semibold border-b border-gray-500 pt-4 pb-1">Group Appearance</h2>
-          
-            <div class="grid grid-cols-2 gap-4">
-              <label class="flex flex-col">
-                Group Text Size
-                <input id="group-text-size" type="range" min="10" max="24" value="16" />
-              </label>
-          
-              <label class="flex flex-col">
-                Divider Color
-                <input id="group-divider-color" class="w-12 h-6 border rounded" type="color" value="#666666" />
-              </label>
+
+            <div class="mt-4">
+              <h2 class="text-xl font-semibold text-white border-b border-gray-500 pb-1">Accounts</h2>
+              <div class="flex items-center space-x-2 mt-2">
+                <input type="checkbox" id="use-two-emails" class="h-4 w-4 bg-white/10 rounded" />
+                <label for="use-two-emails" class="text-white">Use Two Emails</label>
+              </div>
+            </div>
+            
+            <div class="mt-4 space-y-4">
+              <h2 class="text-xl font-semibold text-white border-b border-gray-500 pb-1">Cache:</h2>
+              <div class="flex flex-col space-y-2">
+                <div class="flex items-center">
+                  <label for="cache-duration" class="text-white">Duration:</label>
+                  <input id="cache-duration" class="ml-2 w-20 h-10 p-2 rounded-md bg-white/10 focus-visible:outline-0" type="number"
+                  min="0" value="5">
+                  <span class="pl-2">minutes</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-4 space-y-4">
+              <h2 class="text-xl font-semibold text-white border-b border-gray-500 pb-1">GPS:</h2>
+              <div class="flex flex-col space-y-2">
+                <button id="btn-use-gps" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">Use GPS</button>
+                <div class="flex items-center justify-between gap-4">
+                  <div>
+                    <label for="gps-lat" class="text-white">Latitude:</label>
+                    <input id="gps-lat" class="ml-2 w-25 h-10 p-2 rounded-md bg-white/10 focus-visible:outline-0">
+                  </div>
+                  <div>
+                    <label for="gps-lng" class="text-white">Longitude:</label>
+                    <input id="gps-lng" class="ml-2 w-25 h-10 p-2 rounded-md bg-white/10 focus-visible:outline-0">
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-
+        </div>
+        
+        <div class="p-6 sticky bottom-0 bg-gray-800 z-10">
+          <input type="file" id="settingsLoader" accept=".json" style="display:none" />
+          <div class="flex justify-between">
+            <div class="flex items-center space-x-2">
+              <button id="open-backup-manager" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">Backup
+                Settings</button>
+                <button id="clear-settings" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded">Clear
+                  Settings</button>
+                </div>
+                
+                <div class="space-x-2">
+                  <button id="import-settings"
+                  class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded">Import</button>
+                  <button id="export-settings"
+                  class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded">Export</button>
+                  <button id="close-settings" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">Save</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div id="shortcut-edit-modal"
+        class="fixed top-0 left-0 w-full h-full bg-black/60 flex items-center justify-center hidden z-50">
+        <div class="bg-gray-800 p-6 rounded shadow-xl w-full max-w-md text-white">
+          <h2 class="text-xl font-semibold mb-4" id="shortcut-modal-title">Edit Shortcut</h2>
+          
+          <label class="block mb-2">Title:
+            <input type="text" id="shortcut-edit-title" class="w-full p-2 rounded bg-gray-700 mt-1" />
+          </label>
+          
+          <label class="block mb-2">Link:
+            <input type="url" id="shortcut-edit-link" class="w-full p-2 rounded bg-gray-700 mt-1" />
+          </label>
+          
+          <label class="block mb-2">Color:
+            <input class="w-full p-2 rounded bg-gray-700 mt-1" id="shortcut-edit-color" type="color" value="#374151" />
+          </label>
+          
+          <label class="block mb-2">Icon (emoji, text, or FontAwesome class):
+            <input type="text" id="shortcut-edit-icon" class="w-full p-2 rounded bg-gray-700 mt-1"
+            placeholder="🔗 or fa-solid fa-code" />
+          </label>
+          
+          <label>Choose FontAwesome Icon:
+            <input id="icon-search" type="text" placeholder="Search icons..." class="w-full p-2 rounded bg-gray-700 my-1">
+            <div id="icon-grid" class="grid grid-cols-6 gap-2 max-h-64 overflow-y-auto p-2 border rounded"></div>
+          </label>
+          
           <div class="mt-4">
-            <h2 class="text-xl font-semibold text-white border-b border-gray-500 pb-1">Accounts</h2>
-            <div class="flex items-center space-x-2 mt-2">
-              <input type="checkbox" id="use-two-emails" class="h-4 w-4 bg-white/10 rounded" />
-              <label for="use-two-emails" class="text-white">Use Two Emails</label>
+            <span class="text-sm text-gray-300">Live Preview:</span>
+            <div id="shortcut-icon-preview" class="mt-1 text-9xl"></div>
+          </div>
+          
+          <div class="flex justify-between mt-6">
+            <button id="shortcut-edit-cancel" class="px-4 py-2 bg-gray-600 rounded hover:bg-gray-700">Cancel</button>
+            <button id="shortcut-edit-save" class="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700">Save</button>
+          </div>
+        </div>
+      </div>
+      <!-- Backup Modal -->
+      <div id="backup-modal" class="fixed inset-0 z-50 hidden bg-black/70 flex items-center justify-center">
+        <div class="w-full max-w-2xl bg-gray-800 rounded-xl p-6 shadow-xl flex flex-col h-[75vh]">
+          <h2 class="text-lg font-semibold text-white mb-4">Backup Settings</h2>
+          
+          <!-- List of backups -->
+          <div id="backup-list" class="flex-1 overflow-y-auto bg-gray-900 rounded p-2 space-y-2">
+            <!-- backup-row elements go here -->
+          </div>
+          
+          <!-- Input to name a new backup -->
+          <input type="text" id="new-backup-name" class="mt-3 w-full bg-gray-700 text-white px-3 py-2 rounded hidden"
+          placeholder="Backup - DD-MM-YYYY" />
+          
+          <!-- Action buttons -->
+          <div class="mt-4 flex justify-between">
+            <button id="delete-backup" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">Delete</button>
+            
+            <div class="space-x-2">
+              <button id="save-backup" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Save</button>
+              <button id="load-backup" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded disabled:opacity-50"
+              disabled>Load</button>
+              <button id="close-backup-modal"
+              class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded">Close</button>
             </div>
           </div>
         </div>
       </div>
-      <div class="p-6 sticky bottom-0 bg-gray-800 z-10">
-        <input type="file" id="settingsLoader" accept=".json" style="display:none" />
-        <div class="flex justify-between">
-          <div class="flex items-center space-x-2">
-            <button id="open-backup-manager" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">Backup Settings</button>
-            <button id="clear-settings" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded">Clear Settings</button>
-          </div>
-
-          <div class="space-x-2">
-            <button id="import-settings" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded">Import</button>
-            <button id="export-settings" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded">Export</button>
-            <button id="close-settings" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">Close</button>
-          </div>
-        </div>
-      </div>
     </div>
-  </div>
-  <div id="shortcut-edit-modal"
-    class="fixed top-0 left-0 w-full h-full bg-black/60 flex items-center justify-center hidden z-50">
-    <div class="bg-gray-800 p-6 rounded shadow-xl w-full max-w-md text-white">
-      <h2 class="text-xl font-semibold mb-4" id="shortcut-modal-title">Edit Shortcut</h2>
+  </body>
+  </html>
   
-      <label class="block mb-2">Title:
-        <input type="text" id="shortcut-edit-title" class="w-full p-2 rounded bg-gray-700 mt-1" />
-      </label>
-  
-      <label class="block mb-2">Link:
-        <input type="url" id="shortcut-edit-link" class="w-full p-2 rounded bg-gray-700 mt-1" />
-      </label>
-
-      <label class="block mb-2">Color:
-        <input class="w-full p-2 rounded bg-gray-700 mt-1" id="shortcut-edit-color" type="color" value="#374151" />
-      </label>
-  
-      <label class="block mb-2">Icon (emoji, text, or FontAwesome class):
-        <input type="text" id="shortcut-edit-icon" class="w-full p-2 rounded bg-gray-700 mt-1"
-          placeholder="🔗 or fa-solid fa-code" />
-      </label>
-  
-      <label>Choose FontAwesome Icon:
-        <input id="icon-search" type="text" placeholder="Search icons..." class="w-full p-2 rounded bg-gray-700 my-1">
-        <div id="icon-grid" class="grid grid-cols-6 gap-2 max-h-64 overflow-y-auto p-2 border rounded"></div>
-        </label>
-  
-      <div class="mt-4">
-        <span class="text-sm text-gray-300">Live Preview:</span>
-        <div id="shortcut-icon-preview" class="mt-1 text-9xl"></div>
-      </div>
-  
-      <div class="flex justify-between mt-6">
-        <button id="shortcut-edit-cancel" class="px-4 py-2 bg-gray-600 rounded hover:bg-gray-700">Cancel</button>
-        <button id="shortcut-edit-save" class="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700">Save</button>
-      </div>
-    </div>
-  </div>
-  <!-- Backup Modal -->
-  <div id="backup-modal" class="fixed inset-0 z-50 hidden bg-black/70 flex items-center justify-center">
-    <div class="w-full max-w-2xl bg-gray-800 rounded-xl p-6 shadow-xl flex flex-col h-[75vh]">
-      <h2 class="text-lg font-semibold text-white mb-4">Backup Settings</h2>
-  
-      <!-- List of backups -->
-      <div id="backup-list" class="flex-1 overflow-y-auto bg-gray-900 rounded p-2 space-y-2">
-        <!-- backup-row elements go here -->
-      </div>
-  
-      <!-- Input to name a new backup -->
-      <input type="text" id="new-backup-name" class="mt-3 w-full bg-gray-700 text-white px-3 py-2 rounded hidden"
-        placeholder="Backup - DD-MM-YYYY" />
-  
-      <!-- Action buttons -->
-      <div class="mt-4 flex justify-between">
-        <button id="delete-backup" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">Delete</button>
-  
-        <div class="space-x-2">
-          <button id="save-backup" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Save</button>
-          <button id="load-backup" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded disabled:opacity-50"
-            disabled>Load</button>
-          <button id="close-backup-modal"
-            class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded">Close</button>
-        </div>
-      </div>
-    </div>
-  </div>
-</body>
-</html>

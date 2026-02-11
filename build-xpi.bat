@@ -19,3 +19,4 @@ if exist %OUTPUT% del /f /q %OUTPUT%
 echo.
 echo Created %OUTPUT% with folder structure preserved and exclusions applied.
 endlocal
+pause

@@ -2,35 +2,20 @@ button {
   cursor: pointer;
 }
 
+button:disabled,
+button[disabled]{
+  cursor: wait;
+  filter: grayscale(100%);
+}
+
 body {
   font-family: Arial, sans-serif;
   color: #eee;
 }
 
-#header {
-  height: 2em;
-}
-
 .min-max-display {
   display: flex;
   flex-direction: column;
-}
-
-#last-updated-wrapper {
-  position: absolute;
-  right: 1em;
-  top: 0px;
-  font-size: 0.7em;
-}
-
-.content {
-  display: flex;
-  padding: 20px;
-}
-
-.left-column, .center-column, .right-column {
-  width: 30%;
-  padding: 10px;
 }
 
 .modal {
@@ -189,14 +174,22 @@ ul#tasks-list {
   padding-left: 1rem;
 }
 
+li.task-entry.task-completed {
+  list-style-type: '✔';
+}
+
 ul.subtask-list {
   list-style-type: '└ ▢';
   /* Nested task icon */
   padding-left: 1.5rem;
 }
 
+li.task-entry.task-completed {
+  list-style-type: '└ ✔';
+}
+
 ul#tasks-list li::marker, ul.subtask-list li::marker {
-  color: #FFFFFF30;
+  color: var(--right-text-color-secondary-user);
 }
 
 #calendar-events:not(:has(.calendar-event-entry)) {
@@ -229,7 +222,7 @@ ul#tasks-list li::marker, ul.subtask-list li::marker {
 
 .calendar-cell {
   padding: 0.5rem;
-  background: #1F2937;
+  background: #FFFFFF10;
   text-align: center;
   border-radius: 4px;
   position: relative;
