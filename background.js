@@ -26,7 +26,7 @@ API.runtime.onMessage.addListener((message, sender, sendResponse) => {
             code: message.code,
             client_id: IS_FIREFOX ? FIREFOX_CLIENT_ID : CHROME_CLIENT_ID,
             client_secret: IS_FIREFOX ? FIREFOX_CLIENT_SECRET : CHROME_CLIENT_SECRET,
-            // code_verifier: pkce_verifier,Doesnt work
+            // code_verifier: pkce_verifier, // Doesnt work
             redirect_uri: API.identity.getRedirectURL(),
             grant_type: "authorization_code"
           })

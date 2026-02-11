@@ -29,7 +29,7 @@ let isPrivateWindow = false;
 
 let pkce_verifier = generateCodeVerifier();
 
-if (DEMO_MODE) {
+if (!DEMO_MODE) {
   browser.storage.local.set({ "pkce_verifier": pkce_verifier });
 }
 
@@ -2535,10 +2535,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   userConfirmation = getUserConfirmation;
-
-  // function setCssVariable(variable, value) {
-  //   document.documentElement.style.setProperty(variable, value);
-  // }
 
   init();
 });
