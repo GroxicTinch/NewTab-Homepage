@@ -24,8 +24,8 @@ const SCOPES = [
 ].join(' ');
 
 const DEMO_MODE = (RUNTIME_ENV === ENV_TYPES.STATIC);
-const CLIENT_ID = (RUNTIME_ENV === ENV_TYPES.FIREFOX && FIREFOX_CLIENT_ID) ? FIREFOX_CLIENT_ID :
-                  (RUNTIME_ENV === ENV_TYPES.CHROME && CHROME_CLIENT_ID) ? CHROME_CLIENT_ID :
+const CLIENT_ID = (RUNTIME_ENV === ENV_TYPES.FIREFOX && typeof FIREFOX_CLIENT_ID !== 'undefined') ? FIREFOX_CLIENT_ID :
+                  (RUNTIME_ENV === ENV_TYPES.CHROME && typeof CHROME_CLIENT_ID !== 'undefined') ? CHROME_CLIENT_ID :
                   null;
 let isPrivateWindow = false;
 
