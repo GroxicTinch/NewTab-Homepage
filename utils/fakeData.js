@@ -35,25 +35,35 @@ function getFakeSignInButtonHTML() {
 }
 
 // Fake data generators for static page mode
-function generateFakeEmails() {
-  const senders = [
-    { name: 'John Smith', email: 'john.smith@example.com' },
-    { name: 'Sarah Johnson', email: 'sarah.j@example.com' },
-    { name: 'Team Lead', email: 'team.lead@company.com' },
-    { name: 'HR Department', email: 'hr@company.com' },
-    { name: 'Marketing', email: 'marketing@company.com' }
-  ];
-  const subjects = [
-    'Did you see the new homepage design?',
-    'This homepage is amazing! you should totally check it out',
-    'Drop everything! Check out this new tab page!',
-    'We have noticed a boost in morale, raises for all!',
-    'Wait? Surely it isn\'t free?'
-  ];
+function generateFakeEmails(accountIndex) {
+  var senders;
+  var subjects;
+
+  if(accountIndex == 1) {
+    senders = [
+      { name: 'John Smith', email: 'john.smith@example.com' },
+      { name: 'Sarah Johnson', email: 'sarah.j@example.com' },
+    ];
+    subjects = [
+      'Did you see the new homepage design?',
+      'This homepage is amazing! you should totally check it out',
+    ];
+  } else {
+    senders = [
+      { name: 'Team Lead', email: 'team.lead@company.com' },
+      { name: 'HR Department', email: 'hr@company.com' },
+      { name: 'Marketing', email: 'marketing@company.com' }
+    ];
+    subjects = [
+      'Drop everything! Check out this new tab page!',
+      'We have noticed a boost in morale, raises for all!',
+      'Wait? Surely it isn\'t free?'
+    ];
+  }
   
   const now = new Date();
   const messages = [];
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < senders.length; i++) {
     const sender = senders[i % senders.length];
     const subject = subjects[i % subjects.length];
     const date = new Date(now.getTime() - (i * 3600000)); // Each email is 1 hour older

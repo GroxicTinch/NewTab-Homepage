@@ -1,4 +1,4 @@
-const VERSION = "0.3.2";
+const VERSION = "0.4.2";
 
 const CACHE = {
   EMAIL: "email",
@@ -181,7 +181,7 @@ const WEATHER_API = 'https://api.open-meteo.com/v1/forecast' +
                     '&current=weather_code,temperature_2m&timezone=auto&timeformat=unixtime';
 
 document.addEventListener("DOMContentLoaded", () => {
-  const loadscreen = document.getElementById("loadscreen");
+  const homeDisplay = document.getElementById("home-display");
 
   const leftColumn = document.getElementById("left-column");
   const rightColumn = document.getElementById("right-column");
@@ -199,7 +199,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const clearSettingsToDefault = document.getElementById("clear-settings");
   const importSettings = document.getElementById("import-settings");
   const exportSettings = document.getElementById("export-settings");
-  const closeSettings = document.getElementById("close-settings");
+  const saveSettings = document.getElementById("save-settings");
 
   const backupModal = document.getElementById("backup-modal");
   const backupNameInput = document.getElementById("new-backup-name");
@@ -237,7 +237,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const groupDividerColorControl = document.getElementById('group-divider-color');
 
   // Get google response cache setting
-  const useThemeOverridesCheckbox = document.getElementById("use-theme-overrides");
+  const themeColorOverrideCheckbox = document.getElementById("theme-color-override");
+  const themeTitleTypeDropdownButton = document.getElementById("theme-title-type-dropdown-button");
+  const themeTitleTypeDropdownMenu = document.getElementById("theme-title-type-dropdown-menu");
+  const themeCustomTitle = document.getElementById("theme-custom-title");
+
   const useTwoEmailsCheckbox = document.getElementById("use-two-emails");
   const cacheDurationInput = document.getElementById("cache-duration"); // New input for cache duration
 
@@ -249,15 +253,33 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const versionDisplay = document.getElementById("version-text");
 
-  // Event listeners for color pickers
-  headerBgColorPicker.addEventListener("input", updateColors);
-  headerTextColorPicker.addEventListener("input", updateColors);
-  leftBgColorPicker.addEventListener("input", updateColors);
-  leftTextColorPicker.addEventListener("input", updateColors);
-  centerBgColorPicker.addEventListener("input", updateColors);
-  centerTextColorPicker.addEventListener("input", updateColors);
-  rightBgColorPicker.addEventListener("input", updateColors);
-  rightTextColorPicker.addEventListener("input", updateColors);
+  const colorPickers = [
+    headerBgColorPicker,
+    headerTextColorPicker,
+    leftBgColorPicker,
+    leftTextColorPicker,
+    centerBgColorPicker,
+    centerTextColorPicker,
+    rightBgColorPicker,
+    rightTextColorPicker
+  ];
+
+  // Function to handle focus
+  const colorPickerHandleFocus = () => {
+    settingsModal.style.opacity = '0'; // Make the modal transparent when any color picker is focused
+  };
+
+  // Function to handle blur
+  const colorPickerHandleBlur = () => {
+    settingsModal.style.opacity = ''; // Reset transparency when color picker loses focus
+  };
+
+  // Loop through each color picker to add event listeners
+  colorPickers.forEach(picker => {
+    // picker.addEventListener("focus", colorPickerHandleFocus);
+    // picker.addEventListener("blur", colorPickerHandleBlur);
+    picker.addEventListener("input", updateColors);
+  });
 
   collapseHandleLeft.addEventListener("click", () => {
     leftCollapsed = !leftCollapsed;
@@ -272,9 +294,40 @@ document.addEventListener("DOMContentLoaded", () => {
     updateCollapseStates();
   });
 
-  useThemeOverridesCheckbox.addEventListener("change", () => {
-    useThemeOverrides = useThemeOverridesCheckbox.checked;
+  themeColorOverrideCheckbox.addEventListener("change", () => {
+    useThemeColorOverride = themeColorOverrideCheckbox.checked;
     updateColors();
+  });
+
+  themeTitleTypeDropdownButton.addEventListener('click', () => {
+    themeTitleTypeDropdownMenu.classList.toggle('hidden');
+  });
+
+  const themeTitleTypeDropdownOptions = themeTitleTypeDropdownMenu.querySelectorAll('a');
+  themeTitleTypeDropdownOptions.forEach(option => {
+    option.addEventListener('click', (event) => {
+      const selectedText = event.target.textContent;
+      const selectedValue = event.target.getAttribute("data-value");
+      themeTitleTypeDropdownButton.querySelector("span").textContent = selectedText;
+      themeTitleType = selectedValue;
+      themeTitleTypeDropdownMenu.classList.toggle('hidden');
+      updateHeaderTitle();
+    });
+  });
+
+  const setThemeTitleType = (newType) => {
+    themeTitleType = newType;
+    themeTitleTypeDropdownOptions.forEach(option => {
+      if (option.getAttribute("data-value") === themeTitleType) {
+        themeTitleTypeDropdownButton.querySelector("span").textContent = option.textContent;
+      }
+    });
+    updateHeaderTitle();
+  };
+
+  themeCustomTitle.addEventListener("input", () => {
+    customHeaderTitle = themeCustomTitle.value;
+    updateHeaderTitle();
   });
 
   btnUseGPS.addEventListener("click", () => {
@@ -431,7 +484,7 @@ document.addEventListener("DOMContentLoaded", () => {
     saveSettingsToFile();
   });
 
-  closeSettings.addEventListener("click", () => {
+  saveSettings.addEventListener("click", () => {
     settingsModal.classList.add("hidden");
     saveSettingsToStorage(); // Save colors on change
   });
@@ -444,8 +497,16 @@ document.addEventListener("DOMContentLoaded", () => {
     input.addEventListener('input', applyShortcutStyles);
   });
 
+  window.addEventListener('click', (e) => {
+    if (!themeTitleTypeDropdownButton.contains(e.target) && !themeTitleTypeDropdownMenu.contains(e.target)) {
+      themeTitleTypeDropdownMenu.classList.add('hidden');
+    }
+  });
+
   let leftCollapsed = false;
   let rightCollapsed = false;
+
+  let customHeaderTitle = "";
 
   let backupList = [];
   let selectedBackupIndex = null;
@@ -454,7 +515,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let shortcutsEditMode = false;
   let editingGroupIndex = null;
   let editingShortcutIndex = null;
-  let useThemeOverrides = false;
+  let useThemeColorOverride = false;
+  let themeTitleType = "ignore";
   let useTwoEmails = false;
 
   let gps = null;
@@ -1023,15 +1085,13 @@ document.addEventListener("DOMContentLoaded", () => {
   
   async function loadSettingsFromStorage() {
     if(await storageEmpty()) {
-      console.warn("storage is empty");
+      console.warn("Storage is empty");
       loadSettingsFromVars();
     } else {
       try {
         const colors = await storageGet("themeColors");
         const loadSettings = await storageGet("settings");
         const data = await storageGet("shortcutsData");
-
-        console.log("Loaded settings from storage:", { colors, loadSettings, data });
         
         loadSettingsFromVars(colors.themeColors, loadSettings.settings, data.shortcutsData);
   
@@ -1081,14 +1141,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
     cacheDurationInput.value = settings?.cacheDuration ?? 10; // Default to 5 minutes
 
-    if (settings?.useThemeOverrides === undefined) {
-      useThemeOverrides = true;
+    if (settings?.useThemeColorOverride === undefined) {
+      useThemeColorOverride = true;
     } else {
-      useThemeOverrides = !!settings.useThemeOverrides;
+      useThemeColorOverride = !!settings.useThemeColorOverride;
     }
-    useThemeOverridesCheckbox.checked = useThemeOverrides;
+    themeColorOverrideCheckbox.checked = useThemeColorOverride;
 
-    useTwoEmails = !!settings?.useTwoEmails;
+    customHeaderTitle = settings?.customHeaderTitle ?? "";
+    setThemeTitleType(settings?.themeTitleType ?? "ignore");
+
+    console.error(DEMO_MODE);
+
+    if (settings?.useTwoEmails === undefined) {
+      useTwoEmails = DEMO_MODE;
+    } else {
+      useTwoEmails = !!settings?.useTwoEmails;
+    }
     useTwoEmailsCheckbox.checked = useTwoEmails;
 
     gps = [settings?.gps?.lat ?? -31.9522, settings?.gps?.lng ?? 115.8614];
@@ -1110,7 +1179,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     updateLastRefreshedDisplay();
     applyShortcutStyles();
-    updateColors(); // Apply loaded colors
+    updateColors();
   }
 
   async function saveSettingsToStorage() {
@@ -1224,7 +1293,11 @@ document.addEventListener("DOMContentLoaded", () => {
       groupDividerColor: groupDividerColorControl.value || '#666666',
 
       cacheDuration: parseInt(cacheDurationInput.value, 10) ?? 10,
-      useThemeOverrides: !!useThemeOverridesCheckbox.checked,
+      useThemeColorOverride: !!themeColorOverrideCheckbox.checked,
+
+      customHeaderTitle: customHeaderTitle,
+      themeTitleType: themeTitleType,
+
       useTwoEmails: !!useTwoEmailsCheckbox.checked
     }
 
@@ -1266,7 +1339,7 @@ document.addEventListener("DOMContentLoaded", () => {
     setCssVariable("--right-text-color-user", rightTextColorPicker.value);
     setCssVariable("--right-text-color-secondary-user", rightTextColorPicker.value + "80");
 
-    if(useThemeOverrides) {
+    if(useThemeColorOverride) {
       setCssVariable("--header-bg-color", "var(--header-bg-color-override)");
       setCssVariable("--header-text-color", "var(--header-text-color-override)");
 
@@ -1292,6 +1365,35 @@ document.addEventListener("DOMContentLoaded", () => {
       setCssVariable("--right-bg-color", "var(--right-bg-color-user)");
       setCssVariable("--right-text-color", "var(--right-text-color-user)");
       setCssVariable("--right-text-color-secondary", "var(--right-text-color-secondary-user)");
+    }
+  }
+
+  function updateHeaderTitle() {
+    if (customHeaderTitle == ""){
+      homeDisplay.innerText = globalThis.defaultHeaderTitle;
+      return
+    }
+      
+    switch(themeTitleType) {
+      case "prefix":
+        homeDisplay.innerText = `${customHeaderTitle} ${globalThis.defaultHeaderTitle}`;
+        break;
+      case "suffix":
+        homeDisplay.innerText = `${globalThis.defaultHeaderTitle} ${customHeaderTitle}`;
+        break;
+      case "replace":
+        homeDisplay.innerText = `${customHeaderTitle}`;
+        break;
+      case "replaceUnthemed":
+        if (globalThis.appliedTheme === THEMES.NONE) {
+          homeDisplay.innerText = customHeaderTitle;
+        } else {
+          homeDisplay.innerText = globalThis.defaultHeaderTitle;
+        }
+        break;
+      default:
+          homeDisplay.innerText = globalThis.defaultHeaderTitle;
+        break;
     }
   }
   
@@ -1383,7 +1485,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function storageSetNoKey(value) {
-    console.log("Attempting to save to storage:", value);
     if (!DEMO_MODE) {
       await browser.storage.sync.set(value);
       return value;
@@ -1858,7 +1959,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   
   // 4) Example: fetch unread Gmail snippets for account “which”
-  async function fetchEmails(which) {
+  async function fetchEmails(accountIndex) {
     const url = new URL('https://www.googleapis.com/gmail/v1/users/me/messages');
     url.searchParams.append('labelIds', 'UNREAD');
     url.searchParams.append('labelIds', 'INBOX');
@@ -1867,12 +1968,12 @@ document.addEventListener("DOMContentLoaded", () => {
     let resp;
     if (DEMO_MODE) {
       // Generate fake email data for static page mode
-      const fakeEmails = generateFakeEmails();
+      const fakeEmails = generateFakeEmails(accountIndex);
       resp = {
         messages: fakeEmails.map(email => ({ id: email.id }))
       };
     } else {
-      resp = await getTokenedResponse(url, which, `${CACHE.EMAIL}_${which}`);
+      resp = await getTokenedResponse(url, accountIndex, `${CACHE.EMAIL}_${accountIndex}`);
     }
     
     // render the results
@@ -1883,20 +1984,20 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     // 2) Grab (or create) the container for this account
     const container = document.getElementById('email-list');
-    let section = container.querySelector(`#emails-${which}`);
+    let section = container.querySelector(`#emails-${accountIndex}`);
 
     if (!section) {
       section = document.createElement('div');
-      section.id = `emails-${which}`;
+      section.id = `emails-${accountIndex}`;
       section.classList.add("sidepanel-container");
-      let emailName = which === 1 ? 'Personal' : 'Professional';
+      let emailName = accountIndex === 1 ? 'Personal' : 'Professional';
 
       section.innerHTML = `
-        <a class="email-name" href="https://mail.google.com/mail/u/${which-1}/#inbox">✉️ ${emailName}</a>
+        <a class="email-name" href="https://mail.google.com/mail/u/${accountIndex-1}/#inbox">✉️ ${emailName}</a>
         <ul class="email-msg-list"></ul>
       `;
 
-      if (which === 1) {
+      if (accountIndex === 1) {
         container.insertBefore(section, container.firstChild);
       } else {
         container.appendChild(section);
@@ -1920,7 +2021,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (DEMO_MODE) {
         // Use fake email data for static page mode
-        const fakeEmails = generateFakeEmails();
+        const fakeEmails = generateFakeEmails(accountIndex);
         msgResp = {
           payload: {
             headers: [
@@ -1931,7 +2032,7 @@ document.addEventListener("DOMContentLoaded", () => {
           }
         };        
       } else {
-        msgResp = await getTokenedResponse(msgUrl, which, `${CACHE.EMAIL_MSG}_${which}_${i}`);
+        msgResp = await getTokenedResponse(msgUrl, accountIndex, `${CACHE.EMAIL_MSG}_${accountIndex}_${i}`);
       }
       
       const msgFromCombined = msgResp.payload.headers.find(h => h.name === 'From');
@@ -2495,6 +2596,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function refreshSidebarsDemoMode(force = false) {
     fetchEmails(1);
+    if (useTwoEmails) {
+      fetchEmails(2);
+    }
     fetchTasks();
     fetchCalendar();
 

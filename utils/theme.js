@@ -1,4 +1,8 @@
-const homeDisplay = document.getElementById("home-display");
+THEMES = {
+  NONE: 0,
+  DEMO: 1,
+  PRIVATE: 2,
+}
 
 function checkAndApplyWindowTheme() {
   setCssVariable('--header-bg-color-override', 'var(--header-bg-color-user)');
@@ -17,12 +21,19 @@ function checkAndApplyWindowTheme() {
   if (DEMO_MODE) {
     setCssVariable('--header-bg-color-override', '#e17100');
     setCssVariable('--header-text-color-override', '#2a2a2a');
-    homeDisplay.innerText = "🧪 Demo Mode";
+    globalThis.appliedTheme = THEMES.DEMO;
+    globalThis.defaultHeaderTitle = "🧪 Demo Mode";
   } else if (isPrivateWindow) {
     setCssVariable('--header-bg-color-override', '#3c0366');
     setCssVariable('--header-text-color-override', '#ffffff');
-    homeDisplay.innerText = "😏 Sneaky Mode";
+    globalThis.appliedTheme = THEMES.PRIVATE;
+    globalThis.defaultHeaderTitle = "😏 Sneaky Mode";
+  } else {
+    globalThis.appliedTheme = THEMES.NONE;
+    globalThis.defaultHeaderTitle = "🏠 Home"
   }
+
+  return 
 }
 
 function setCssVariable(variable, value) {
