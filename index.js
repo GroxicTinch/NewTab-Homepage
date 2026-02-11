@@ -24,13 +24,18 @@ const SCOPES = [
 ].join(' ');
 
 const DEMO_MODE = (RUNTIME_ENV === ENV_TYPES.STATIC);
-const CLIENT_ID = (RUNTIME_ENV === ENV_TYPES.FIREFOX ? FIREFOX_CLIENT_ID : CHROME_CLIENT_ID)
+const CLIENT_ID = (RUNTIME_ENV === ENV_TYPES.FIREFOX && FIREFOX_CLIENT_ID) ? FIREFOX_CLIENT_ID :
+                  (RUNTIME_ENV === ENV_TYPES.CHROME && CHROME_CLIENT_ID) ? CHROME_CLIENT_ID :
+                  null;
 let isPrivateWindow = false;
 
 let pkce_verifier = generateCodeVerifier();
 
 if (!DEMO_MODE) {
   browser.storage.local.set({ "pkce_verifier": pkce_verifier });
+  if(CLIENT_ID === null) {
+    alert("privateVars.js has not been created, this extension will not work correctly!");
+  }
 }
 
 // PKCE doesn't even work currently due to Google Cloud Credentials still requiring a client_secret even when we try use PKCE
