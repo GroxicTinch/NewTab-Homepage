@@ -66,7 +66,7 @@ function generateFakeEmails(accountIndex) {
   for (let i = 0; i < senders.length; i++) {
     const sender = senders[i % senders.length];
     const subject = subjects[i % subjects.length];
-    const date = new Date(now.getTime() - (i * 3600000)); // Each email is 1 hour older
+    const date = new Date(now.getTime() - ((i * 86400000) - (i - 3600000)));
     
     messages.push({
       id: `fake_${i}`,

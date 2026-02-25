@@ -62,47 +62,55 @@
     <!-- Main Content -->
     <main class="flex flex-grow overflow-hidden p-4 pb-0 space-x-4">
       <!-- Left Column -->
-      <section id="left-column" class="w-1/4 max-w-xl space-y-6 bg-(--left-bg-color) text-(--left-text-color) p-4 rounded relative transition-[margin]">
-        <a href="http://gmail.com">
-          <h2 class="text-lg font-semibold">Emails</h2>
-        </a>
-        
-        <div id="email-list" class="text-sm">
-          <div id="email-loading" style="height:600px" class="flex">
-            <div class="sidepanel-container flex-grow overflow-hidden" data-accountsignin></div>
+      <section id="left-column" class="flex shrink-0 bg-(--left-bg-color) text-(--left-text-color) p-2 rounded relative transition-transform outer">
+        <div id="left-column-collapser" class="flex flex-col space-y-6 w-[22vw] p-2">
+          <a href="http://gmail.com" class="mb-1">
+            <h2 class="text-lg font-semibold">Emails</h2>
+          </a>
+          
+          <div id="email-list" class="text-sm">
+            <div id="email-loading" style="height:600px" class="flex">
+              <div class="sidepanel-container flex-grow overflow-hidden" data-accountsignin></div>
+            </div>
           </div>
         </div>
+
         <!-- Handle for collapsing -->
-        <div id="collapse-handle-left" class="absolute -right-2 top-1/2 transform -translate-y-1/2 p-1.5 pl-0 rounded text-2xl text-(--left-text-color) bg-(--left-bg-color) cursor-pointer group">
+        <div id="collapse-handle-left" class="absolute -right-2 top-1/2 transform -translate-y-1/2 p-1.5 pl-0 rounded text-2xl text-(--left-text-color) bg-(--left-bg-color) cursor-pointer group transition-transform duration-300">
           <span class="opacity-30 group-hover:opacity-100">🞀</span>
         </div>
       </section>
       
       <!-- Center Column -->
-      <section id="center-column" class="flex flex-grow flex-col p-4 h-full rounded shadow overflow-hidden bg-(--center-bg-color) text-(--center-text-color) transition-[margin]">
+      <section id="center-column" class="flex flex-grow flex-1 flex-col p-4 h-full rounded shadow overflow-hidden bg-(--center-bg-color) text-(--center-text-color) transition-transform relative">
+        <div id="big-bin-notify" class="size-full absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 hidden">
+          <img id="big-bin-notify-img" src="icons/bin.png" alt="" class="p-20 size-full object-contain opacity-10">
+        </div>
         <div class="overflow-y-auto" id="shortcuts">Loading Shortcuts...</div>
       </section>
       
       <!-- Right Column -->
-      <section id="right-column" class="flex flex-col justify-between w-1/4 max-w-xl space-y-6 bg-(--right-bg-color) text-(--right-text-color) p-4 rounded relative transition-[margin]">
-        <div class="flex flex-col flex-grow overflow-hidden space-y-2">
-          <a href="https://tasks.google.com/" class="flex-none">
-            <h2 class="text-lg font-semibold inline-block">Tasks</h2>
-          </a>
-          <div class="sidepanel-container flex-grow overflow-hidden">
-            <ul class="overflow-y-auto max-h-full pr-2" data-accountsignin id="tasks-list"></ul>
+      <section id="right-column" class="flex shrink-0 bg-(--right-bg-color) text-(--right-text-color) p-2 rounded relative transition-transform">
+        <div id="right-column-collapser" class="flex flex-col justify-between space-y-6 w-[22vw] p-2">
+          <div class="flex flex-col flex-grow overflow-hidden space-y-2">
+            <a href="https://tasks.google.com/" class="flex-none">
+              <h2 class="text-lg font-semibold inline-block">Tasks</h2>
+            </a>
+            <div class="sidepanel-container flex-grow overflow-hidden">
+              <ul class="overflow-y-auto max-h-full pr-2" data-accountsignin id="tasks-list"></ul>
+            </div>
           </div>
-        </div>
-        <div id="calendar-container" class="">
-          <h2 class="text-lg font-semibold">Calendar</h2>
-          <ul class="sidepanel-container" id="calendar-events"></ul>
-          <div id="calendar-header"></div>
-          <div id="calendar-grid"></div>
+          <div id="calendar-container" class="">
+            <h2 class="text-lg font-semibold">Calendar</h2>
+            <ul class="sidepanel-container" id="calendar-events"></ul>
+            <div id="calendar-header"></div>
+            <div id="calendar-grid"></div>
+          </div>
         </div>
 
         <!-- Handle for collapsing -->
         <div id="collapse-handle-right"
-          class="absolute -left-2 top-1/2 transform -translate-y-1/2 p-1.5 pr-0 rounded text-2xl text-(--left-text-color) bg-(--left-bg-color) cursor-pointer group">
+          class="absolute -left-2 top-1/2 transform -translate-y-1/2 p-1.5 pr-0 rounded text-2xl text-(--left-text-color) bg-(--left-bg-color) cursor-pointer group transition-transform duration-300">
           <span class="opacity-30 group-hover:opacity-100">🞂</span>
         </div>
       </section>
@@ -290,6 +298,10 @@
                     </div>
                   </div>
                 </div>
+              </div>
+              <div class="flex items-center space-x-2">
+                <input type="checkbox" id="theme-bin-big-notify" class="h-4 w-4 bg-white/10 rounded" />
+                <label for="theme-bin-big-notify" class="text-white">Use large bin day notifier</label>
               </div>
             </div>
 

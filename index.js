@@ -186,6 +186,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const leftColumn = document.getElementById("left-column");
   const rightColumn = document.getElementById("right-column");
 
+  const leftColumnCollapser = document.getElementById("left-column-collapser");
+  const rightColumnCollapser = document.getElementById("right-column-collapser");
+
   const collapseHandleLeft = document.getElementById("collapse-handle-left");
   const collapseHandleRight = document.getElementById("collapse-handle-right");
 
@@ -241,6 +244,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const themeTitleTypeDropdownButton = document.getElementById("theme-title-type-dropdown-button");
   const themeTitleTypeDropdownMenu = document.getElementById("theme-title-type-dropdown-menu");
   const themeCustomTitle = document.getElementById("theme-custom-title");
+  const themeBinBigNotifyCheckbox = document.getElementById("theme-bin-big-notify");
 
   const useTwoEmailsCheckbox = document.getElementById("use-two-emails");
   const cacheDurationInput = document.getElementById("cache-duration"); // New input for cache duration
@@ -250,6 +254,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const gpsLngInput = document.getElementById("gps-lng");
 
   const shortcutsContainer = document.getElementById("shortcuts");
+
+  const bigBinNotify = document.getElementById(`big-bin-notify`);
 
   const versionDisplay = document.getElementById("version-text");
 
@@ -297,6 +303,13 @@ document.addEventListener("DOMContentLoaded", () => {
   themeColorOverrideCheckbox.addEventListener("change", () => {
     useThemeColorOverride = themeColorOverrideCheckbox.checked;
     updateColors();
+  });
+
+  themeBinBigNotifyCheckbox.addEventListener("change", () => {
+    useThemeBinBigNotify = themeBinBigNotifyCheckbox.checked;
+    if (isBinDaySoon) {
+      bigBinNotify.classList.toggle("hidden", !useThemeBinBigNotify);
+    }
   });
 
   themeTitleTypeDropdownButton.addEventListener('click', () => {
@@ -516,8 +529,11 @@ document.addEventListener("DOMContentLoaded", () => {
   let editingGroupIndex = null;
   let editingShortcutIndex = null;
   let useThemeColorOverride = false;
+  let useThemeBinBigNotify = false;
   let themeTitleType = "ignore";
   let useTwoEmails = false;
+
+  let isBinDaySoon = false;
 
   let gps = null;
 
@@ -1146,12 +1162,13 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       useThemeColorOverride = !!settings.useThemeColorOverride;
     }
+    useThemeBinBigNotify = settings?.useThemeBinBigNotify || false;
+
     themeColorOverrideCheckbox.checked = useThemeColorOverride;
+    themeBinBigNotifyCheckbox.checked = useThemeBinBigNotify;
 
     customHeaderTitle = settings?.customHeaderTitle ?? "";
     setThemeTitleType(settings?.themeTitleType ?? "ignore");
-
-    console.error(DEMO_MODE);
 
     if (settings?.useTwoEmails === undefined) {
       useTwoEmails = DEMO_MODE;
@@ -1294,6 +1311,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       cacheDuration: parseInt(cacheDurationInput.value, 10) ?? 10,
       useThemeColorOverride: !!themeColorOverrideCheckbox.checked,
+      useThemeBinBigNotify: !!themeBinBigNotifyCheckbox.checked,
 
       customHeaderTitle: customHeaderTitle,
       themeTitleType: themeTitleType,
@@ -1307,20 +1325,18 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function updateCollapseStates() {
+    leftColumnCollapser.classList.toggle("hidden", leftCollapsed);
+    rightColumnCollapser.classList.toggle("hidden", rightCollapsed);
     if (leftCollapsed) {
-      leftColumn.style.marginLeft = `-${leftColumn.offsetWidth + 5}px`; // Apply margin:
-      collapseHandleLeft.style.rotate = "180deg";
+      collapseHandleLeft.style.transform = "rotate(180deg)";
     } else {
-      leftColumn.style.marginLeft = `0`; // Apply margin:
-      collapseHandleLeft.style.rotate = "0deg";
+      collapseHandleLeft.style.transform = "rotate(0deg)";
     }
 
     if (rightCollapsed) {
-      rightColumn.style.marginRight = `-${rightColumn.offsetWidth + 5}px`; // Apply margin:
-      collapseHandleRight.style.rotate = "180deg";
+      collapseHandleRight.style.transform = "rotate(180deg)";
     } else {
-      rightColumn.style.marginRight = `0`; // Slide back
-      collapseHandleRight.style.rotate = "0deg";
+      collapseHandleRight.style.transform = "rotate(0deg)";
     }
   }
 
@@ -1395,6 +1411,8 @@ document.addEventListener("DOMContentLoaded", () => {
           homeDisplay.innerText = globalThis.defaultHeaderTitle;
         break;
     }
+
+    document.title = `${customHeaderTitle}`;
   }
   
   // Cache management functions
@@ -1612,15 +1630,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function buildGoogleAuthUrl() {
     const redirectUri = browser.identity.getRedirectURL();
-    const challenge = await generateCodeChallenge(pkce_verifier);
+    // const challenge = await generateCodeChallenge(pkce_verifier);
     
     const params = new URLSearchParams({
       client_id: CLIENT_ID,
       response_type: "code",
       redirect_uri: redirectUri,
       scope: SCOPES,
-      code_challenge: challenge,
-      code_challenge_method: "S256",
+      // code_challenge: challenge,
+      // code_challenge_method: "S256",
+      include_granted_scopes: 'true',
+      access_type: "offline",
+      prompt: 'consent'
     });
 
     return `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
@@ -1832,6 +1853,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderBinDays(binDays) {
     const binDaysContainer = document.getElementById(`bin-days`);
     const binImg = document.getElementById(`bin-main-img`);
+    const bigBinImg = document.getElementById(`big-bin-notify-img`);
     const binText = document.getElementById(`bin-days-text`);
     const binTextGeneral = document.getElementById(`bin-days-textlong-general`);
     const binTextRecycling = document.getElementById(`bin-days-textlong-recycling`);
@@ -1853,27 +1875,39 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (DEMO_MODE) {
       binImg.classList.add('bin-general');
+      bigBinImg.classList.add('bin-general');
       binText.innerHTML = "Put out the bins! (Not realy, this is just a demo)";
+      isBinDaySoon = true;
     } else if(genWasteDateTime<recycleDateTime) {
       binImg.classList.add('bin-general');
+      bigBinImg.classList.add('bin-general');
       if(today == genWasteDateTime.setHours(0, 0, 0, 0)) {
         binText.innerHTML = "Today";
+        isBinDaySoon = true;
       } else if(tomorrow.getTime() == genWasteDateTime.setHours(0, 0, 0, 0)) {
         binText.innerHTML = "Put out the bins!";
+        isBinDaySoon = true;
       } else {
         binText.innerHTML = genWasteStr;
       }
     } else {
       binImg.classList.add('bin-recycling');
+      bigBinImg.classList.add('bin-recycling');
       binLong.classList.add('flex-row-reverse');
 
       if (today == recycleDateTime.setHours(0, 0, 0, 0)) {
         binText.innerHTML = "Today";
+        isBinDaySoon = true;
       } else if (tomorrow.getTime() == recycleDateTime.setHours(0, 0, 0, 0)) {
         binText.innerHTML = "Put out the bins!";
+        isBinDaySoon = true;
       } else {
         binText.innerHTML = recyclingStr;
       }
+    }
+
+    if (isBinDaySoon) {
+      bigBinNotify.classList.toggle("hidden", !useThemeBinBigNotify);
     }
 
     binTextGeneral.innerHTML = genWasteDateTime.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
@@ -2463,10 +2497,10 @@ document.addEventListener("DOMContentLoaded", () => {
     refreshSidebars();
 
     setTimeout(() => {
-      leftColumn.classList.add("duration-300");
-      rightColumn.classList.add("duration-300");
+      // leftColumn.classList.add("duration-300");
+      // rightColumn.classList.add("duration-300");
       content.classList.remove("opacity-0");
-    }, 50);   
+    }, 50);
     
     if (DEMO_MODE) {
       const settingsObj = await storageGet("settings");
