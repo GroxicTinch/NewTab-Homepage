@@ -1,4 +1,4 @@
-const VERSION = "0.4.2";
+const VERSION = "0.4.5";
 
 const CACHE = {
   EMAIL: "email",
@@ -215,43 +215,54 @@ document.addEventListener("DOMContentLoaded", () => {
   const headerWeather = document.getElementById("weather");
   const headerDate = document.getElementById("date");
 
-  // Get color pickers
-  const headerBgColorPicker = document.getElementById("header-bg-color");
-  const headerTextColorPicker = document.getElementById("header-text-color");
-  const leftBgColorPicker = document.getElementById("left-bg-color");
-  const leftTextColorPicker = document.getElementById("left-text-color");
-  const centerBgColorPicker = document.getElementById("center-bg-color");
-  const centerTextColorPicker = document.getElementById("center-text-color");
-  const rightBgColorPicker = document.getElementById("right-bg-color");
-  const rightTextColorPicker = document.getElementById("right-text-color");
+  // Settings Elements
+  // Main Appearance
+  const headerBgColorSetting = createColorSetting("header-bg-color", "themeHeaderBg", "#1F2937", () => updateColors());
+  const headerTextColorSetting = createColorSetting("header-text-color", "themeHeaderText", "#FFFFFF", () => updateColors());
+  const leftBgColorSetting = createColorSetting("left-bg-color", "themeLeftBg", "#1F2937", () => updateColors());
+  const leftTextColorSetting = createColorSetting("left-text-color", "themeLeftText", "#FFFFFF", () => updateColors());
+  const centerBgColorSetting = createColorSetting("center-bg-color", "themeCenterBg", "#1F2937", () => updateColors());
+  const centerTextColorSetting = createColorSetting("center-text-color", "themeCenterText", "#FFFFFF", () => updateColors());
+  const rightBgColorSetting = createColorSetting("right-bg-color", "themeRightBg", "#1F2937", () => updateColors());
+  const rightTextColorSetting = createColorSetting("right-text-color", "themeRightText", "#FFFFFF", () => updateColors());
 
-  // Get Shortcut Appearance controls
-  const shortcutIconSizeControl = document.getElementById('shortcut-icon-size');
-  const shortcutTextSizeControl = document.getElementById('shortcut-text-size');
-  const shortcutPadXControl = document.getElementById('shortcut-padding-x');
-  const shortcutPadYControl = document.getElementById('shortcut-padding-y');
-  const shortcutMarginXControl = document.getElementById('shortcut-margin-x');
-  const shortcutMarginYControl = document.getElementById('shortcut-margin-y');
-  const shortcutTextColorControl = document.getElementById('shortcut-text-color');
-  const shortcutIconRadiusControl = document.getElementById('shortcut-radius');
+  // Shortcut Appearance
+  const shortcutIconSizeSetting = createNumberSetting("shortcut-icon-size", "shortcutIconSize", 32, () => applyShortcutStyles());
+  const shortcutTextSizeSetting = createNumberSetting("shortcut-text-size", "shortcutTextSize", 14, () => applyShortcutStyles());
+  const shortcutPadXSetting = createNumberSetting("shortcut-padding-x", "shortcutPadX", 40, () => applyShortcutStyles());
+  const shortcutPadYSetting = createNumberSetting("shortcut-padding-y", "shortcutPadY", 12, () => applyShortcutStyles());
+  const shortcutMarginXSetting = createNumberSetting("shortcut-margin-x", "shortcutMarginX", 12, () => applyShortcutStyles());
+  const shortcutMarginYSetting = createNumberSetting("shortcut-margin-y", "shortcutMarginY", 12, () => applyShortcutStyles());
+  const shortcutTextColorSetting = createColorSetting("shortcut-text-color", "shortcutTextColor", "#ffffff", () => applyShortcutStyles());
+  const shortcutIconRadiusSetting = createNumberSetting("shortcut-radius", "shortcutIconRadius", 12, () => applyShortcutStyles());
 
-  // Get Group Appearance controls
-  const groupTextSizeControl = document.getElementById('group-text-size');
-  const groupDividerColorControl = document.getElementById('group-divider-color');
+  // Group Appearance
+  const groupTextSizeSetting = createNumberSetting("group-text-size", "groupTextSize", 16, () => applyShortcutStyles());
+  const groupDividerColorSetting = createColorSetting("group-divider-color", "groupDividerColor", "#666666", () => applyShortcutStyles());
 
-  // Get google response cache setting
-  const themeColorOverrideCheckbox = document.getElementById("theme-color-override");
-  const themeTitleTypeDropdownButton = document.getElementById("theme-title-type-dropdown-button");
-  const themeTitleTypeDropdownMenu = document.getElementById("theme-title-type-dropdown-menu");
-  const themeCustomTitle = document.getElementById("theme-custom-title");
-  const themeBinBigNotifyCheckbox = document.getElementById("theme-bin-big-notify");
+  // Cache
+  const cacheDurationSetting = createNumberSetting("cache-duration", "cacheDuration", 5);
 
-  const useTwoEmailsCheckbox = document.getElementById("use-two-emails");
-  const cacheDurationInput = document.getElementById("cache-duration"); // New input for cache duration
+  const themeColorOverrideSetting = createCheckboxSetting("chx-theme-color-override", "useThemeColorOverride", true, () => {
+    updateColors();
+  });
+
+  const binBigNotifySetting = createCheckboxSetting("theme-bin-big-notify", "binBigNotify", true, (checked) => {
+    if (isBinDaySoon) {
+      bigBinNotify.classList.toggle("hidden", !checked);
+    }
+  });
+
+  const twoEmailsSetting = createCheckboxSetting("chx-use-two-emails", "useTwoEmails", DEMO_MODE);
 
   const btnUseGPS = document.getElementById("btn-use-gps");
-  const gpsLatInput = document.getElementById("gps-lat");
-  const gpsLngInput = document.getElementById("gps-lng");
+  const themeTitleTypeSetting = createDropdownSetting("theme-title-type-dropdown-button", "theme-title-type-dropdown-menu", "themeTitleType", "ignore", (val) => updateHeaderTitle());
+  const themeCustomTitleSetting = createTextSetting("theme-custom-title", "customHeaderTitle", "", () => updateHeaderTitle());
+  const gpsSetting = createGpsSetting("gps-lat", "gps-lng", "gps", -31.9522, 115.8614);
+
+  const forceNewTabSetting = createCheckboxSetting("chx-force-new-tab", "forceNewTab", false);
+
+  // End Settings Elements
 
   const shortcutsContainer = document.getElementById("shortcuts");
 
@@ -260,14 +271,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const versionDisplay = document.getElementById("version-text");
 
   const colorPickers = [
-    headerBgColorPicker,
-    headerTextColorPicker,
-    leftBgColorPicker,
-    leftTextColorPicker,
-    centerBgColorPicker,
-    centerTextColorPicker,
-    rightBgColorPicker,
-    rightTextColorPicker
+    headerBgColorSetting.control,
+    headerTextColorSetting.control,
+    leftBgColorSetting.control,
+    leftTextColorSetting.control,
+    centerBgColorSetting.control,
+    centerTextColorSetting.control,
+    rightBgColorSetting.control,
+    rightTextColorSetting.control
   ];
 
   // Function to handle focus
@@ -298,49 +309,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     localStorage.setItem("rightColumnCollapsed", rightCollapsed);
     updateCollapseStates();
-  });
-
-  themeColorOverrideCheckbox.addEventListener("change", () => {
-    useThemeColorOverride = themeColorOverrideCheckbox.checked;
-    updateColors();
-  });
-
-  themeBinBigNotifyCheckbox.addEventListener("change", () => {
-    useThemeBinBigNotify = themeBinBigNotifyCheckbox.checked;
-    if (isBinDaySoon) {
-      bigBinNotify.classList.toggle("hidden", !useThemeBinBigNotify);
-    }
-  });
-
-  themeTitleTypeDropdownButton.addEventListener('click', () => {
-    themeTitleTypeDropdownMenu.classList.toggle('hidden');
-  });
-
-  const themeTitleTypeDropdownOptions = themeTitleTypeDropdownMenu.querySelectorAll('a');
-  themeTitleTypeDropdownOptions.forEach(option => {
-    option.addEventListener('click', (event) => {
-      const selectedText = event.target.textContent;
-      const selectedValue = event.target.getAttribute("data-value");
-      themeTitleTypeDropdownButton.querySelector("span").textContent = selectedText;
-      themeTitleType = selectedValue;
-      themeTitleTypeDropdownMenu.classList.toggle('hidden');
-      updateHeaderTitle();
-    });
-  });
-
-  const setThemeTitleType = (newType) => {
-    themeTitleType = newType;
-    themeTitleTypeDropdownOptions.forEach(option => {
-      if (option.getAttribute("data-value") === themeTitleType) {
-        themeTitleTypeDropdownButton.querySelector("span").textContent = option.textContent;
-      }
-    });
-    updateHeaderTitle();
-  };
-
-  themeCustomTitle.addEventListener("input", () => {
-    customHeaderTitle = themeCustomTitle.value;
-    updateHeaderTitle();
   });
 
   btnUseGPS.addEventListener("click", () => {
@@ -382,10 +350,10 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       if(choice === 0) {
-        await storageRemove(["settings", "themeColors", "shortcutsData"]);
+        await storageRemove(["settings", "shortcutsData"]);
         location.reload(); // Reload to apply default settings
       } else if (choice === 1) {
-        await storageRemove(["settings", "themeColors"]);
+        await storageRemove(["settings"]);
         location.reload(); // Reload to apply default settings
       }
     });
@@ -502,24 +470,9 @@ document.addEventListener("DOMContentLoaded", () => {
     saveSettingsToStorage(); // Save colors on change
   });
 
-  document.querySelectorAll('#shortcuts-settings input').forEach(input => {
-    input.addEventListener('input', applyShortcutStyles);
-  });
-
-  document.querySelectorAll('#group-settings input').forEach(input => {
-    input.addEventListener('input', applyShortcutStyles);
-  });
-
-  window.addEventListener('click', (e) => {
-    if (!themeTitleTypeDropdownButton.contains(e.target) && !themeTitleTypeDropdownMenu.contains(e.target)) {
-      themeTitleTypeDropdownMenu.classList.add('hidden');
-    }
-  });
 
   let leftCollapsed = false;
   let rightCollapsed = false;
-
-  let customHeaderTitle = "";
 
   let backupList = [];
   let selectedBackupIndex = null;
@@ -528,14 +481,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let shortcutsEditMode = false;
   let editingGroupIndex = null;
   let editingShortcutIndex = null;
-  let useThemeColorOverride = false;
-  let useThemeBinBigNotify = false;
-  let themeTitleType = "ignore";
-  let useTwoEmails = false;
 
   let isBinDaySoon = false;
-
-  let gps = null;
 
   async function checkPrivateWindow() {
     const window = await browser.windows.getCurrent();
@@ -592,17 +539,17 @@ document.addEventListener("DOMContentLoaded", () => {
   function applyShortcutStyles() {
     const root = document.documentElement;
 
-    root.style.setProperty('--shortcut-icon-size', `${shortcutIconSizeControl.value}px`);
-    root.style.setProperty('--shortcut-text-size', `${shortcutTextSizeControl.value}px`);
-    root.style.setProperty('--shortcut-padding-x', `${shortcutPadXControl.value}px`);
-    root.style.setProperty('--shortcut-padding-y', `${shortcutPadYControl.value}px`);
-    root.style.setProperty('--shortcut-margin-x', `${shortcutMarginXControl.value}px`);
-    root.style.setProperty('--shortcut-margin-y', `${shortcutMarginYControl.value}px`);
-    root.style.setProperty('--shortcut-text-color', shortcutTextColorControl.value);
-    root.style.setProperty('--shortcut-radius', `${shortcutIconRadiusControl.value}px`);
+    root.style.setProperty('--shortcut-icon-size', `${shortcutIconSizeSetting.value()}px`);
+    root.style.setProperty('--shortcut-text-size', `${shortcutTextSizeSetting.value()}px`);
+    root.style.setProperty('--shortcut-padding-x', `${shortcutPadXSetting.value()}px`);
+    root.style.setProperty('--shortcut-padding-y', `${shortcutPadYSetting.value()}px`);
+    root.style.setProperty('--shortcut-margin-x', `${shortcutMarginXSetting.value()}px`);
+    root.style.setProperty('--shortcut-margin-y', `${shortcutMarginYSetting.value()}px`);
+    root.style.setProperty('--shortcut-text-color', shortcutTextColorSetting.value());
+    root.style.setProperty('--shortcut-radius', `${shortcutIconRadiusSetting.value()}px`);
 
-    root.style.setProperty('--group-text-size', `${groupTextSizeControl.value}px`);
-    root.style.setProperty('--group-divider-color', groupDividerColorControl.value);
+    root.style.setProperty('--group-text-size', `${groupTextSizeSetting.value()}px`);
+    root.style.setProperty('--group-divider-color', groupDividerColorSetting.value());
   }
 
   function showShortcutModal(groupIndex, shortcutIndex = null) {  
@@ -899,7 +846,11 @@ document.addEventListener("DOMContentLoaded", () => {
           };
         } else {
           item.href = shortcut.link.startsWith("http") ? shortcut.link : `https://${shortcut.link}`;
-          item.target = "_self"; // keeps left-click in same tab
+          if (forceNewTabSetting.value()) {
+            item.target = "_blank";
+          } else {
+            item.target = "_self";
+          }
         }
         
         item.className = "shortcut-icon shortcut-icon-rounded relative";
@@ -1002,33 +953,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         collapseIcon.onclick = clickFunction;
 
-        // Handle both left-click and middle-click
-        const openLink = (url, newTab = false) => {
-          if (shortcutsEditMode) return;
-        
-          if (url && !url.startsWith('http://') && !url.startsWith('https://')) {
-            url = `https://${url}`;
-          }
-        
-          if (newTab) {
-            window.open(url, '_blank');
-          } else {
-            window.location.href = url;
-          }
-        };
-        
-        // item.onclick = (e) => {
-        //   if (e.button === 0) {
-        //     openLink(shortcut.link, false); // Open in same tab
-        //   }
-        // };
-        
-        // item.addEventListener("auxclick", (e) => {
-        //   if (e.button === 1) {
-        //     openLink(shortcut.link, true); // Open in new tab
-        //   }
-        // });
-
         shortcutsList.appendChild(item);
       });
 
@@ -1105,11 +1029,10 @@ document.addEventListener("DOMContentLoaded", () => {
       loadSettingsFromVars();
     } else {
       try {
-        const colors = await storageGet("themeColors");
         const loadSettings = await storageGet("settings");
         const data = await storageGet("shortcutsData");
         
-        loadSettingsFromVars(colors.themeColors, loadSettings.settings, data.shortcutsData);
+        loadSettingsFromVars(loadSettings.settings, data.shortcutsData);
   
         loadAllBackups();
       } catch (error) {
@@ -1124,7 +1047,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const content = await file.text();
       const parsed = JSON.parse(content);
 
-      loadSettingsFromVars(parsed.themeColors, parsed.settings, parsed.shortcutsData);
+      loadSettingsFromVars(parsed.settings, parsed.shortcutsData);
       saveSettingsToStorage();
     } catch (error) {
       console.error("Error loading settings:", error);
@@ -1133,54 +1056,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Load stored colors if available
-  async function loadSettingsFromVars(themeColors, settings, inShortcutData) {
-    headerBgColorPicker.value = themeColors?.headerBg || "#1F2937";
-    headerTextColorPicker.value = themeColors?.headerText || "#FFFFFF";
-    leftBgColorPicker.value = themeColors?.leftBg || "#1F2937";
-    leftTextColorPicker.value = themeColors?.leftText || "#FFFFFF";
-    centerBgColorPicker.value = themeColors?.centerBg || "#1F2937";
-    centerTextColorPicker.value = themeColors?.centerText || "#FFFFFF";
-    rightBgColorPicker.value = themeColors?.rightBg || "#1F2937";
-    rightTextColorPicker.value = themeColors?.rightText || "#FFFFFF";
-
-    shortcutIconSizeControl.value = settings?.shortcutIconSize ?? 32;
-    shortcutTextSizeControl.value = settings?.shortcutTextSize ?? 14;
-    shortcutPadXControl.value = settings?.shortcutPadX ?? 40;
-    shortcutPadYControl.value = settings?.shortcutPadY ?? 12;
-    shortcutMarginXControl.value = settings?.shortcutMarginX ?? 12;
-    shortcutMarginYControl.value = settings?.shortcutMarginY ?? 12;
-    shortcutTextColorControl.value = settings?.shortcutTextColor || '#ffffff';
-    shortcutIconRadiusControl.value = settings?.shortcutIconRadius ?? 12;
-
-    groupTextSizeControl.value = settings?.groupTextSize ?? 16;
-    groupDividerColorControl.value = settings?.groupDividerColor || '#666666';
-
-    cacheDurationInput.value = settings?.cacheDuration ?? 10; // Default to 5 minutes
-
-    if (settings?.useThemeColorOverride === undefined) {
-      useThemeColorOverride = true;
-    } else {
-      useThemeColorOverride = !!settings.useThemeColorOverride;
-    }
-    useThemeBinBigNotify = settings?.useThemeBinBigNotify || false;
-
-    themeColorOverrideCheckbox.checked = useThemeColorOverride;
-    themeBinBigNotifyCheckbox.checked = useThemeBinBigNotify;
-
-    customHeaderTitle = settings?.customHeaderTitle ?? "";
-    setThemeTitleType(settings?.themeTitleType ?? "ignore");
-
-    if (settings?.useTwoEmails === undefined) {
-      useTwoEmails = DEMO_MODE;
-    } else {
-      useTwoEmails = !!settings?.useTwoEmails;
-    }
-    useTwoEmailsCheckbox.checked = useTwoEmails;
-
-    gps = [settings?.gps?.lat ?? -31.9522, settings?.gps?.lng ?? 115.8614];
-
-    gpsLatInput.value = gps[0];
-    gpsLngInput.value = gps[1];
+  async function loadSettingsFromVars(settings, inShortcutData) {
+    Settings.forEach(s => s.load(settings));
   
     if(inShortcutData) {
       shortcutsData = inShortcutData;
@@ -1202,10 +1079,6 @@ document.addEventListener("DOMContentLoaded", () => {
   async function saveSettingsToStorage() {
     const tempSaveData = getSaveSettingsData();
     let shouldSave = true;
-    if(tempSaveData.themeColors == null || tempSaveData.themeColors == undefined || tempSaveData.themeColors == {}) {
-      shouldSave = false;
-      console.error("Theme colors are invalid");
-    }
     if(tempSaveData.settings == null || tempSaveData.settings == undefined || tempSaveData.settings == {}) {
       shouldSave = false;
       console.error("Settings are invalid");
@@ -1281,47 +1154,16 @@ document.addEventListener("DOMContentLoaded", () => {
     const backup = result.backup?.[index].data;
     if (!backup) return;
 
-    loadSettingsFromVars(backup.themeColors, backup.settings, backup.shortcutsData);
+    loadSettingsFromVars(backup.settings, backup.shortcutsData);
   }
 
   // Save colors to browser storage sync
   function getSaveSettingsData() {
-    const themeColors = {
-      headerBg: headerBgColorPicker.value,
-      headerText: headerTextColorPicker.value,
-      leftBg: leftBgColorPicker.value,
-      leftText: leftTextColorPicker.value,
-      centerBg: centerBgColorPicker.value,
-      centerText: centerTextColorPicker.value,
-      rightBg: rightBgColorPicker.value,
-      rightText: rightTextColorPicker.value
-    };
-    const settings = {
-      shortcutIconSize: parseInt(shortcutIconSizeControl.value, 10) ?? 32,
-      shortcutTextSize: parseInt(shortcutTextSizeControl.value, 10) ?? 14,
-      shortcutPadX: parseInt(shortcutPadXControl.value, 10) ?? 12,
-      shortcutPadY: parseInt(shortcutPadYControl.value, 10) ?? 12,
-      shortcutMarginX: parseInt(shortcutMarginXControl.value, 10) ?? 12,
-      shortcutMarginY: parseInt(shortcutMarginYControl.value, 10) ?? 12,
-      shortcutTextColor: shortcutTextColorControl.value || '#ffffff',
-      shortcutIconRadius: parseInt(shortcutIconRadiusControl.value, 10) ?? 12,
+    const settings = {}
 
-      groupTextSize: parseInt(groupTextSizeControl.value, 10) ?? 16,
-      groupDividerColor: groupDividerColorControl.value || '#666666',
+    Settings.forEach(s => s.save(settings));
 
-      cacheDuration: parseInt(cacheDurationInput.value, 10) ?? 10,
-      useThemeColorOverride: !!themeColorOverrideCheckbox.checked,
-      useThemeBinBigNotify: !!themeBinBigNotifyCheckbox.checked,
-
-      customHeaderTitle: customHeaderTitle,
-      themeTitleType: themeTitleType,
-
-      useTwoEmails: !!useTwoEmailsCheckbox.checked
-    }
-
-    // shortcutsData is already in the correct format and a global variable
-
-    return {themeColors, settings, shortcutsData};
+    return {settings, shortcutsData};
   }
 
   function updateCollapseStates() {
@@ -1342,20 +1184,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Update colors based on user selection
   function updateColors() {
-    setCssVariable("--header-bg-color-user", headerBgColorPicker.value);
-    setCssVariable("--header-text-color-user", headerTextColorPicker.value);
+    setCssVariable("--header-bg-color-user", headerBgColorSetting.value());
+    setCssVariable("--header-text-color-user", headerTextColorSetting.value());
 
-    setCssVariable("--left-bg-color-user", leftBgColorPicker.value);
-    setCssVariable("--left-text-color-user", leftTextColorPicker.value);
+    setCssVariable("--left-bg-color-user", leftBgColorSetting.value());
+    setCssVariable("--left-text-color-user", leftTextColorSetting.value());
 
-    setCssVariable("--center-bg-color-user", centerBgColorPicker.value);
-    setCssVariable("--center-text-color-user", centerTextColorPicker.value);
+    setCssVariable("--center-bg-color-user", centerBgColorSetting.value());
+    setCssVariable("--center-text-color-user", centerTextColorSetting.value());
 
-    setCssVariable("--right-bg-color-user", rightBgColorPicker.value);
-    setCssVariable("--right-text-color-user", rightTextColorPicker.value);
-    setCssVariable("--right-text-color-secondary-user", rightTextColorPicker.value + "80");
+    setCssVariable("--right-bg-color-user", rightBgColorSetting.value());
+    setCssVariable("--right-text-color-user", rightTextColorSetting.value());
+    setCssVariable("--right-text-color-secondary-user", rightTextColorSetting.value() + "80");
 
-    if(useThemeColorOverride) {
+    if (themeColorOverrideSetting.value()) {
       setCssVariable("--header-bg-color", "var(--header-bg-color-override)");
       setCssVariable("--header-text-color", "var(--header-text-color-override)");
 
@@ -1385,24 +1227,24 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function updateHeaderTitle() {
-    if (customHeaderTitle == ""){
+    if (themeCustomTitleSetting.value() == ""){
       homeDisplay.innerText = globalThis.defaultHeaderTitle;
       return
     }
       
-    switch(themeTitleType) {
+    switch(themeTitleTypeSetting.value()) {
       case "prefix":
-        homeDisplay.innerText = `${customHeaderTitle} ${globalThis.defaultHeaderTitle}`;
+        homeDisplay.innerText = `${themeCustomTitleSetting.value() } ${globalThis.defaultHeaderTitle}`;
         break;
       case "suffix":
-        homeDisplay.innerText = `${globalThis.defaultHeaderTitle} ${customHeaderTitle}`;
+        homeDisplay.innerText = `${globalThis.defaultHeaderTitle} ${themeCustomTitleSetting.value() }`;
         break;
       case "replace":
-        homeDisplay.innerText = `${customHeaderTitle}`;
+        homeDisplay.innerText = `${themeCustomTitleSetting.value() }`;
         break;
       case "replaceUnthemed":
         if (globalThis.appliedTheme === THEMES.NONE) {
-          homeDisplay.innerText = customHeaderTitle;
+          homeDisplay.innerText = themeCustomTitleSetting.value();
         } else {
           homeDisplay.innerText = globalThis.defaultHeaderTitle;
         }
@@ -1412,36 +1254,32 @@ document.addEventListener("DOMContentLoaded", () => {
         break;
     }
 
-    document.title = `${customHeaderTitle}`;
+    document.title = `${themeCustomTitleSetting.value() }`;
   }
   
   // Cache management functions
   async function getCacheDuration() {
-    var cacheDuration = 5; // default 5 minutes
-    try {
-      const loadSettings = await storageGet("settings");
-      const settings = loadSettings.settings || {}
-      
-      cacheDuration = settings.cacheDuration;
-    }
-    catch (error) {
-      console.warn("Error retrieving cache duration from settings:", error);
-    }
-
-    return cacheDuration * 60 * 1000; // Convert minutes to milliseconds, default 5 minutes
+    return cacheDurationSetting.value() * 60 * 1000; // Convert minutes to milliseconds, default 5 minutes
   }
 
   async function isCacheValid(cacheKey) {
     const cache = localStorage.getItem(cacheKey);
     if (!cache) return false;
     try {
-      const casheDuration = await getCacheDuration()
-      if(casheDuration == 0) {
-        return false;
-      }      
       const { timestamp } = JSON.parse(cache);
-
-      return Date.now() - timestamp < casheDuration;
+      if (cacheKey === CACHE.WEATHER || cacheKey === CACHE.BIN_INFO) {
+        const cacheDate = new Date(timestamp);
+        const nextExpiry = new Date(cacheDate);
+        nextExpiry.setDate(nextExpiry.getDate() + 1);
+        nextExpiry.setHours(0, 30, 0, 0);
+        return Date.now() < nextExpiry.getTime();
+      } else {
+        const casheDuration = await getCacheDuration()
+        if(casheDuration == 0) {
+          return false;
+        }      
+        return Date.now() - timestamp < casheDuration;
+      }
     } catch (error) {
       console.error(`Error parsing cache for ${cacheKey}:`, error);
       return false;
@@ -1463,7 +1301,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return result || {};
       } else {
         // Always prefer the centralized `settings` blob in static mode.
-        // The modern format stores the data under { saveData: { themeColors, settings, shortcutsData } }
+        // The modern format stores the data under { saveData: { settings, shortcutsData } }
         // Older format stored those keys at the top level of the blob.
 
         // If somebody stored a per-key item separately, return it (backcompat).
@@ -1648,20 +1486,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   
   function buildMicrosoftAuthUrl() {
-    // const redirectUri = browser.identity.getRedirectURL();
-    
-    // const params = new URLSearchParams({
-    //   client_id: CLIENT_ID,
-    //   response_type: 'token',
-    //   redirect_uri: redirectUri,
-    //   scope: SCOPES,
-    //   include_granted_scopes: 'true',
-    //   width: 600,
-    //   height: 400,
-    //   include_granted_scopes: 'true',
-    //   prompt: 'consent'
-    // });
-    // return `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+
   }
 
   // 2) Launch the flow and extract the `access_token` from the redirect URL
@@ -1870,44 +1695,39 @@ document.addEventListener("DOMContentLoaded", () => {
     binDaysContainer.classList.remove('bins-disabled');
 
     var today = new Date().setHours(0, 0, 0, 0); // Reset time to midnight for comparison
+    var yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1); // Get yesterday's date
     var tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1); // Get tomorrow's date
+
+    // Helper function to get bin text
+    function getBinText(binDateTime, binStr) {
+      const binMidnight = binDateTime.setHours(0, 0, 0, 0);
+      if (binMidnight === today) return "Today";
+      if (binMidnight === tomorrow.getTime()) return "Put out the bins!";
+      return binStr;
+    }
 
     if (DEMO_MODE) {
       binImg.classList.add('bin-general');
       bigBinImg.classList.add('bin-general');
       binText.innerHTML = "Put out the bins! (Not realy, this is just a demo)";
       isBinDaySoon = true;
-    } else if(genWasteDateTime<recycleDateTime) {
+    } else if (genWasteDateTime < recycleDateTime && genWasteDateTime > yesterday) {
       binImg.classList.add('bin-general');
       bigBinImg.classList.add('bin-general');
-      if(today == genWasteDateTime.setHours(0, 0, 0, 0)) {
-        binText.innerHTML = "Today";
-        isBinDaySoon = true;
-      } else if(tomorrow.getTime() == genWasteDateTime.setHours(0, 0, 0, 0)) {
-        binText.innerHTML = "Put out the bins!";
-        isBinDaySoon = true;
-      } else {
-        binText.innerHTML = genWasteStr;
-      }
+      binText.innerHTML = getBinText(genWasteDateTime, genWasteStr);
+      isBinDaySoon = binText.innerHTML !== genWasteStr;
     } else {
       binImg.classList.add('bin-recycling');
       bigBinImg.classList.add('bin-recycling');
       binLong.classList.add('flex-row-reverse');
-
-      if (today == recycleDateTime.setHours(0, 0, 0, 0)) {
-        binText.innerHTML = "Today";
-        isBinDaySoon = true;
-      } else if (tomorrow.getTime() == recycleDateTime.setHours(0, 0, 0, 0)) {
-        binText.innerHTML = "Put out the bins!";
-        isBinDaySoon = true;
-      } else {
-        binText.innerHTML = recyclingStr;
-      }
+      binText.innerHTML = getBinText(recycleDateTime, recyclingStr);
+      isBinDaySoon = binText.innerHTML !== recyclingStr;
     }
 
     if (isBinDaySoon) {
-      bigBinNotify.classList.toggle("hidden", !useThemeBinBigNotify);
+      bigBinNotify.classList.toggle("hidden", !binBigNotifySetting.value());
     }
 
     binTextGeneral.innerHTML = genWasteDateTime.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
@@ -2493,6 +2313,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // Load colors on startup
     await loadSettingsFromStorage();
 
+    updateHeaderTitle();
+
     refreshHeader();
     refreshSidebars();
 
@@ -2532,7 +2354,7 @@ document.addEventListener("DOMContentLoaded", () => {
         ${dateDisplay}
       </span>`;
 
-    const weatherInfo = await getBasicResponseWithCache(WEATHER_API + `&latitude=${gps[0]}&longitude=${gps[1]}`, CACHE.WEATHER);
+    const weatherInfo = await getBasicResponseWithCache(WEATHER_API + `&latitude=${gpsSetting.value().lat}&longitude=${gpsSetting.value().lng}`, CACHE.WEATHER);
 
     if (weatherInfo) {
       const weatherToday = todayWeather(weatherInfo);
@@ -2605,8 +2427,8 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
-    const token1 = await ensureToken(1, false, !force);
-    const token2 = useTwoEmails ? await ensureToken(2, false, !force) : null;
+    const token1 = await ensureToken(1, false, force);
+    const token2 = twoEmailsSetting.value() ? await ensureToken(2, false, force) : null;
 
     if (token1) {
       fetchEmails(1);
@@ -2618,7 +2440,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const thisYear = now.getFullYear();
       initInteractiveCalendar(thisMonth, thisYear, []);
     }
-    if (useTwoEmails && token2) {
+    if (twoEmailsSetting.value() && token2) {
       fetchEmails(2);
     }
 
@@ -2630,7 +2452,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function refreshSidebarsDemoMode(force = false) {
     fetchEmails(1);
-    if (useTwoEmails) {
+    if (twoEmailsSetting.value()) {
       fetchEmails(2);
     }
     fetchTasks();

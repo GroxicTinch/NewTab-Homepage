@@ -13,6 +13,7 @@
   <script src="utils/getEnv.js" defer></script>
   <script src="utils/fakeData.js" defer></script>
   <script src="utils/theme.js" defer></script>
+  <script src="utils/settingsBuilder.js" defer></script>
   <script src="utils/misc.js" defer></script>
   <script src="privateVars.js" defer></script>
   <script src="index.js" defer></script>
@@ -119,7 +120,7 @@
     <footer class="flex justify-between bottom-0 mt-auto relative">
       <div class="flex items-center text-sm text-white/30 gap-4">
         <img src="icons/icon.ico" alt="" width="24" class="m-2 mr-0">
-        <span id="version-text" class="hover:text-white"></span>
+        <a href="https://github.com/GroxicTinch/NewTab-Homepage" id="version-text" class="hover:text-white" target="_blank"></a>
         <div id="last-updated-wrapper" class="hover:text-white">
           <span>Last refreshed: </span><span id="last-updated">Never</span>
         </div>
@@ -265,8 +266,8 @@
             <div id="theme-settings" class="space-y-2 bg-black/20 p-2 rounded-lg">
               <h2 class="text-xl font-semibold text-white border-b border-gray-500 pb-1">Theme</h2>
               <div class="flex items-center space-x-2">
-                <input type="checkbox" id="theme-color-override" class="h-4 w-4 bg-white/10 rounded" />
-                <label for="theme-color-override" class="text-white">Allow color overrides (for forcing colors in demo mode or
+                <input type="checkbox" id="chx-theme-color-override" class="h-4 w-4 bg-white/10 rounded" />
+                <label for="chx-theme-color-override" class="text-white">Allow color overrides (for forcing colors in demo mode or
                   private window)</label>
               </div>
               <div class="flex items-center space-x-2">
@@ -308,8 +309,8 @@
             <div id="accounts-settings" class="space-y-2 bg-black/20 p-2 rounded-lg">
               <h2 class="text-xl font-semibold text-white border-b border-gray-500 pb-1">Accounts</h2>
               <div class="flex items-center space-x-2 mt-2">
-                <input type="checkbox" id="use-two-emails" class="h-4 w-4 bg-white/10 rounded" />
-                <label for="use-two-emails" class="text-white">Use Two Emails (Requires page refresh)</label>
+                <input type="checkbox" id="chx-use-two-emails" class="h-4 w-4 bg-white/10 rounded" />
+                <label for="chx-use-two-emails" class="text-white">Use Two Emails (Requires page refresh)</label>
               </div>
             </div>
             
@@ -339,6 +340,14 @@
                     <input id="gps-lng" class="ml-2 w-25 h-10 p-2 rounded-md bg-white/10 focus-visible:outline-0">
                   </div>
                 </div>
+              </div>
+            </div>
+
+            <div id="misc-settings" class="space-y-2 bg-black/20 p-2 rounded-lg">
+              <h2 class="text-xl font-semibold text-white border-b border-gray-500 pb-1">Misc:</h2>
+              <div class="flex items-center space-x-2">
+                <input type="checkbox" id="chx-force-new-tab" class="h-4 w-4 bg-white/10 rounded" />
+                <label for="chx-force-new-tab" class="text-white">Force new tab on left click (Requires page refresh)</label>
               </div>
             </div>
           </div>

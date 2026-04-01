@@ -84,3 +84,8 @@ API.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 });
+
+
+browser.browserAction.onClicked.addListener(() => {
+  browser.tabs.create({ url: browser.runtime.getURL("index.html") });
+});

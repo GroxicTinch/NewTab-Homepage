@@ -30,6 +30,7 @@
         "persistent": true
     },
     "browser_action": {
-        "default_title": "Groxic"
+        "default_title": "Groxic",
+        "default_icon": "icons/icon.ico"
     }
 }
